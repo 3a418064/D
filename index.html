@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Macaron Finance - 視覺化升級版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #fcfcfc; color: #444; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .glass-nav { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); }
+        
+        .slide-up-enter-active, .slide-up-leave-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); opacity: 0; }
+
+        .color-dot { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.1s; }
+        .color-dot:active { transform: scale(0.9); }
+        .color-dot.active { border-color: #666; box-shadow: 0 0 0 2px #fff inset, 0 0 5px rgba(0,0,0,0.2); }
+
+        .icon-btn { padding: 12px; border-radius: 16px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; background: #f8fafc; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .icon-btn.active { background: #e2e8f0; border-color: #94a3b8; }
+        
+        /* 類別按鈕的選取狀態 */
+        .category-btn.active.expense { background-color: #ffe4e6; border-color: #f43f5e; color: #e11d48; }
+        .category-btn.active.income { background-color: #d1fae5; border-color: #10b981; color: #059669; }
+    </style>
+</head>
+<body>
+    <div id="app" class="max-w-md mx-auto min-h-screen pb-28 relative bg-white overflow-hidden shadow-2xl border border-gray-100">
+        
+        <header class="p-6 pt-10 border-b border-gray-100 mb-6 bg-slate-50/50">
+            <div class="flex justify-between items-center mb-1">
+                <p class="text-sm text-slate-500 font-medium">總資產淨值</p>
+                <button @click="openDataMgmt" class="text-slate-400 hover:text-slate-600 text-xs"><i class="fa-solid fa-hard-drive mr-1"></i>重置本地數據</button>
+            </div>
+            <h1 class="text-4xl font-bold tracking-tight text-slate-900">$ {{ totalNetWorth.toLocaleString() }}</h1>
+            
+            <div class="flex space-x-4 overflow-x-auto no-scrollbar pt-6 -ml-2 pl-2 pb-2">
+                
+                <div v-for="acc in accounts" :key="acc.id" 
+                     class="relative min-w-[140px] p-4 rounded-3xl border border-slate-100 bg-white hover:shadow-md transition-shadow flex-shrink-0">
+                    
+                    <button @click="editAccount(acc)" class="absolute top-4 right-4 text-slate-300 hover:text-slate-600 transition-colors">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div :style="{ backgroundColor: acc.color }" class="w-12 h-12 rounded-full flex items-center justify-center shadow-inner">
+                            <i :class="['fa-solid', acc.icon]" class="text-white text-xl drop-shadow-sm"></i>
+                        </div>
+                    </div>
+                    <div class="text-sm text-slate-800 font-bold truncate pr-4">{{ acc.name }}</div>
+                    <div class="text-lg font-black text-slate-900 mt-1">$ {{ acc.balance.toLocaleString() }}</div>
+                </div>
+
+                <button @click="openAccountModal(null)" 
+                        class="min-w-[140px] p-4 rounded-3xl border-2 border-dashed border-slate-200 hover:border-slate-300 hover:bg-slate-50 flex flex-col items-center justify-center text-slate-400 transition-all flex-shrink-0">
+                    <i class="fa-solid fa-plus text-2xl mb-2"></i>
+                    <span class="text-xs font-bold">新增帳戶</span>
+                </button>
+            </div>
+        </header>
+
+        <main class="px-6">
+            <h2 class="text-lg font-bold text-slate-800 mb-4">近期明細</h2>
+            <div v-if="transactions.length === 0" class="text-center py-16 rounded-3xl bg-slate-50">
+                <i class="fa-solid fa-receipt text-4xl text-slate-200 mb-4"></i>
+                <p class="text-slate-400 text-sm font-medium">還沒有任何交易紀錄哦</p>
+            </div>
+            
+            <div class="space-y-3">
+                <div v-for="t in sortedTransactions" :key="t.id" class="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 transition-colors">
+                    <div class="flex items-center space-x-4">
+                        <div :class="getTransBg(t.type)" class="w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-sm">
+                            <i :class="['fa-solid', t.categoryIcon, 'text-lg']"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-800">{{ t.categoryName }}</div>
+                            <div class="flex items-center text-[11px] text-slate-500 font-medium mt-0.5">
+                                <span class="w-2 h-2 rounded-full mr-1.5" :style="{ backgroundColor: getAccountColor(t.accountId) }"></span>
+                                {{ getAccountName(t.accountId) }}
+                                <span v-if="t.type === 'transfer'" class="mx-1">→</span>
+                                <span v-if="t.type === 'transfer'" class="w-2 h-2 rounded-full mx-1.5" :style="{ backgroundColor: getAccountColor(t.toAccountId) }"></span>
+                                <span v-if="t.type === 'transfer'">{{ getAccountName(t.toAccountId) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div :class="getTransColor(t.type)" class="font-black text-lg">
+                            {{ t.type === 'expense' ? '-' : (t.type === 'income' ? '+' : '') }}$ {{ t.amount.toLocaleString() }}
+                        </div>
+                        <div class="text-[10px] text-slate-400 font-mono font-medium">{{ formatDate(t.date) }}</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md glass-nav border-t border-slate-100 p-4 pb-6 z-40 rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.05)] flex justify-around">
+            <button @click="openTransModal('expense')" class="flex flex-col items-center space-y-1 text-rose-500 hover:text-rose-600 transition active:scale-95">
+                <div class="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center text-xl"><i class="fa-solid fa-minus"></i></div>
+                <span class="font-bold text-[10px]">記支出</span>
+            </button>
+            <button @click="openTransModal('transfer')" class="flex flex-col items-center space-y-1 text-slate-500 hover:text-slate-600 transition active:scale-95 mt-[-15px]">
+                <div class="w-14 h-14 rounded-full bg-slate-100 border-4 border-white shadow-sm flex items-center justify-center text-xl"><i class="fa-solid fa-money-bill-transfer"></i></div>
+                <span class="font-bold text-[10px]">調度</span>
+            </button>
+            <button @click="openTransModal('income')" class="flex flex-col items-center space-y-1 text-emerald-500 hover:text-emerald-600 transition active:scale-95">
+                <div class="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-xl"><i class="fa-solid fa-plus"></i></div>
+                <span class="font-bold text-[10px]">記收入</span>
+            </button>
+        </div>
+
+        <transition name="slide-up">
+            <div v-if="isTransModalOpen" class="fixed inset-0 z-50 flex items-end justify-center">
+                <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="isTransModalOpen = false"></div>
+                <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 shadow-2xl">
+                    
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-black text-slate-800">{{ transForm.type === 'expense' ? '新增支出' : (transForm.type === 'income' ? '新增收入' : '資金調度') }}</h3>
+                    </div>
+                    
+                    <form @submit.prevent="submitTransaction" class="space-y-6">
+                        <div class="relative">
+                            <span class="absolute left-0 bottom-2 text-2xl font-black text-slate-300">$</span>
+                            <input type="number" v-model.number="transForm.amount" required placeholder="0" class="w-full text-5xl font-black border-b-2 border-slate-100 pb-2 pl-8 focus:outline-none focus:border-slate-400 placeholder:text-slate-200 transition-colors bg-transparent">
+                        </div>
+
+                        <div v-if="transForm.type !== 'transfer'">
+                            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">選擇類別</label>
+                            <div class="grid grid-cols-4 gap-3 max-h-[160px] overflow-y-auto no-scrollbar p-1">
+                                <button v-for="cat in currentCategories" :key="cat.name" type="button"
+                                        @click="selectCategory(cat)"
+                                        :class="['icon-btn category-btn', transForm.type, { active: transForm.categoryName === cat.name }]">
+                                    <i :class="['fa-solid', cat.icon, 'text-xl mb-1.5']"></i>
+                                    <span class="text-[10px] font-bold">{{ cat.name }}</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div v-else>
+                            <input type="text" v-model="transForm.categoryName" required placeholder="轉帳備註 (例如: ATM 提款)" class="w-full bg-slate-50 px-4 py-3.5 rounded-2xl focus:outline-none font-medium text-sm">
+                        </div>
+
+                        <div class="flex gap-3 bg-slate-50 p-2 rounded-2xl">
+                            <div class="flex-1">
+                                <label class="block text-[10px] font-bold text-slate-400 ml-2 mb-1">{{ transForm.type === 'transfer' ? '從 (轉出)' : '扣款/入帳帳戶' }}</label>
+                                <select v-model="transForm.accountId" class="w-full bg-transparent px-2 py-1 outline-none text-sm font-bold text-slate-700">
+                                    <option v-for="a in accounts" :value="a.id">{{ a.name }}</option>
+                                </select>
+                            </div>
+                            <div v-if="transForm.type === 'transfer'" class="flex items-center text-slate-300"><i class="fa-solid fa-arrow-right"></i></div>
+                            <div class="flex-1" v-if="transForm.type === 'transfer'">
+                                <label class="block text-[10px] font-bold text-slate-400 ml-2 mb-1">到 (轉入)</label>
+                                <select v-model="transForm.toAccountId" class="w-full bg-transparent px-2 py-1 outline-none text-sm font-bold text-slate-700">
+                                    <option v-for="a in accounts" :value="a.id" :disabled="a.id === transForm.accountId">{{ a.name }}</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full py-4.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition active:scale-95 shadow-lg flex justify-center items-center h-14">
+                            確認儲存
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </transition>
+
+        <transition name="slide-up">
+            <div v-if="isAccountModalOpen" class="fixed inset-0 z-50 flex items-end justify-center">
+                <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="isAccountModalOpen = false"></div>
+                <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 shadow-2xl max-h-[90vh] flex flex-col">
+                    
+                    <div class="flex justify-between items-center mb-6 shrink-0">
+                        <h3 class="text-2xl font-black text-slate-800">{{ isEditingAccount ? '編輯帳戶' : '新增帳戶' }}</h3>
+                        <button v-if="isEditingAccount" @click="deleteAccount" class="text-rose-500 hover:bg-rose-50 px-3 py-1.5 rounded-xl text-sm font-bold transition">
+                            <i class="fa-solid fa-trash-can mr-1"></i>刪除
+                        </button>
+                    </div>
+                    
+                    <div class="overflow-y-auto no-scrollbar flex-1 pb-4">
+                        <div class="flex justify-center mb-8">
+                            <div :style="{ backgroundColor: accountForm.color }" class="w-24 h-24 rounded-[2rem] flex items-center justify-center shadow-inner transition-colors duration-300">
+                                <i :class="['fa-solid', accountForm.icon]" class="text-white text-5xl drop-shadow-md"></i>
+                            </div>
+                        </div>
+
+                        <form @submit.prevent="submitAccount" class="space-y-6">
+                            <div class="space-y-3">
+                                <input type="text" v-model="accountForm.name" required placeholder="帳戶名稱 (e.g. 國泰世華、零錢包)" class="w-full bg-slate-50 border border-slate-100 px-5 py-4 rounded-2xl focus:outline-none focus:border-slate-300 font-bold">
+                                <input type="number" v-model.number="accountForm.balance" required placeholder="目前餘額" class="w-full bg-slate-50 border border-slate-100 px-5 py-4 rounded-2xl focus:outline-none focus:border-slate-300 font-bold">
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">設定底色</label>
+                                <div class="grid grid-cols-8 gap-3">
+                                    <div v-for="color in macaronPalette" :key="color" @click="accountForm.color = color"
+                                         :style="{ backgroundColor: color }" :class="['color-dot', { active: accountForm.color === color }]">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">選擇圖示</label>
+                                <div class="grid grid-cols-6 gap-2 max-h-[160px] overflow-y-auto no-scrollbar p-1">
+                                    <div v-for="icon in availableIcons" :key="icon" @click="accountForm.icon = icon"
+                                         :class="['icon-btn text-slate-400 text-xl', { active: accountForm.icon === icon }]">
+                                        <i :class="['fa-solid', icon]"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="w-full py-4.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition shadow-lg h-14">
+                                {{ isEditingAccount ? '儲存變更' : '建立帳戶' }}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+    </div>
+
+    <script>
+        const { createApp, ref, computed, watch, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                // --- 核心數據 ---
+                const accounts = ref([]);
+                const transactions = ref([]);
+
+                // --- 狀態控制 ---
+                const isTransModalOpen = ref(false);
+                const isAccountModalOpen = ref(false);
+                const isEditingAccount = ref(false); // 判斷是新增還是編輯
+
+                // --- 類別配置 (含 Icon) ---
+                const predefinedCategories = {
+                    expense: [
+                        { name: '餐飲', icon: 'fa-utensils' }, { name: '飲料', icon: 'fa-mug-hot' },
+                        { name: '交通', icon: 'fa-train-subway' }, { name: '加油', icon: 'fa-gas-pump' },
+                        { name: '購物', icon: 'fa-bag-shopping' }, { name: '日常', icon: 'fa-basket-shopping' },
+                        { name: '娛樂', icon: 'fa-gamepad' }, { name: '電影', icon: 'fa-film' },
+                        { name: '醫療', icon: 'fa-briefcase-medical' }, { name: '房屋', icon: 'fa-house-chimney' },
+                        { name: '水電', icon: 'fa-bolt' }, { name: '寵物', icon: 'fa-paw' }
+                    ],
+                    income: [
+                        { name: '薪資', icon: 'fa-money-bill-wave' }, { name: '獎金', icon: 'fa-gift' },
+                        { name: '投資', icon: 'fa-chart-line' }, { name: '兼職', icon: 'fa-user-tie' },
+                        { name: '利息', icon: 'fa-coins' }, { name: '其他', icon: 'fa-piggy-bank' }
+                    ]
+                };
+
+                // --- 擴充的 32色馬卡龍色 ---
+                const macaronPalette = [
+                    '#FFB3BA', '#FFDAC1', '#FFF9C4', '#CBF0F8', '#D6EAF8', '#E6E6FA', '#FADBD8', '#FDEBD0',
+                    '#FFC3A0', '#FFEDD8', '#B9F2FF', '#A9DEF9', '#E0BBE4', '#F8C471', '#F9E79F', '#C1E1C1',
+                    '#D4EFDF', '#D1F2EB', '#E8F8F5', '#FAD7A0', '#F5CBA7', '#EDBB99', '#D7BDE2', '#EBDEF0',
+                    '#EAECEE', '#D6DBDF', '#AED6F1', '#A3E4D7', '#A9DFBF', '#F9E79F', '#F5B041', '#5DADE2'
+                ];
+
+                // --- 擴充的多樣化 Icon 庫 ---
+                const availableIcons = [
+                    // 金融/帳戶
+                    'fa-building-columns', 'fa-wallet', 'fa-piggy-bank', 'fa-credit-card', 'fa-money-check-dollar', 'fa-vault', 'fa-coins', 'fa-sack-dollar', 'fa-chart-pie',
+                    // 品牌/支付
+                    'fa-apple', 'fa-android', 'fa-bitcoin', 'fa-paypal', 'fa-line',
+                    // 生活/交通
+                    'fa-house', 'fa-car', 'fa-motorcycle', 'fa-plane', 'fa-train', 'fa-bus', 'fa-cart-shopping',
+                    // 其他/趣味
+                    'fa-briefcase', 'fa-graduation-cap', 'fa-heart', 'fa-star', 'fa-cat', 'fa-dog', 'fa-coffee', 'fa-burger', 'fa-bolt', 'fa-gem', 'fa-crown', 'fa-mobile-screen', 'fa-laptop'
+                ];
+
+                // --- 表單數據 ---
+                const transForm = ref({ type: 'expense', amount: null, categoryName: '', categoryIcon: '', accountId: null, toAccountId: null });
+                const accountForm = ref({ id: null, name: '', balance: null, icon: '', color: '' });
+
+                // --- 初始化與儲存 ---
+                onMounted(() => {
+                    const savedAcc = localStorage.getItem('macaron_accounts_v2');
+                    const savedTrans = localStorage.getItem('macaron_transactions_v2');
+                    
+                    if (!savedAcc) {
+                        accounts.value = [
+                            { id: 1, name: '常用錢包', balance: 2500, icon: 'fa-wallet', color: '#FFB3BA' },
+                            { id: 2, name: '國泰銀行', balance: 150000, icon: 'fa-building-columns', color: '#CBF0F8' }
+                        ];
+                    } else { accounts.value = JSON.parse(savedAcc); }
+                    if (savedTrans) transactions.value = JSON.parse(savedTrans);
+                });
+
+                watch(accounts, (v) => localStorage.setItem('macaron_accounts_v2', JSON.stringify(v)), { deep: true });
+                watch(transactions, (v) => localStorage.setItem('macaron_transactions_v2', JSON.stringify(v)), { deep: true });
+
+                // --- 計算屬性 ---
+                const totalNetWorth = computed(() => accounts.value.reduce((s, a) => s + a.balance, 0));
+                const sortedTransactions = computed(() => [...transactions.value].sort((a, b) => new Date(b.date) - new Date(a.date)));
+                const currentCategories = computed(() => transForm.value.type === 'transfer' ? [] : predefinedCategories[transForm.value.type]);
+
+                // --- 帳戶維護邏輯 (新增/編輯/刪除) ---
+                const openAccountModal = (acc) => {
+                    if (acc) {
+                        // 編輯模式
+                        isEditingAccount.value = true;
+                        accountForm.value = { ...acc };
+                    } else {
+                        // 新增模式
+                        isEditingAccount.value = false;
+                        accountForm.value = { id: null, name: '', balance: null, icon: 'fa-building-columns', color: macaronPalette[Math.floor(Math.random()*macaronPalette.length)] };
+                    }
+                    isAccountModalOpen.value = true;
+                };
+
+                const submitAccount = () => {
+                    if(!accountForm.value.name || accountForm.value.balance === null) return;
+                    
+                    if (isEditingAccount.value) {
+                        // 更新現有帳戶
+                        const index = accounts.value.findIndex(a => a.id === accountForm.value.id);
+                        if (index !== -1) {
+                            // 計算差額調整 (非正規會計做法，但符合個人記帳彈性)
+                            accounts.value[index] = { ...accountForm.value };
+                        }
+                    } else {
+                        // 新增帳戶
+                        accounts.value.push({ id: Date.now(), ...accountForm.value });
+                    }
+                    isAccountModalOpen.value = false;
+                };
+
+                const deleteAccount = () => {
+                    if (accounts.value.length <= 1) {
+                        alert('必須至少保留一個帳戶！');
+                        return;
+                    }
+                    if (confirm(`確定要刪除「${accountForm.value.name}」嗎？相關歷史紀錄仍會保留但將顯示為未知帳戶。`)) {
+                        accounts.value = accounts.value.filter(a => a.id !== accountForm.value.id);
+                        isAccountModalOpen.value = false;
+                    }
+                };
+
+                // --- 交易邏輯 ---
+                const openTransModal = (type) => {
+                    if(accounts.value.length === 0) return alert('請先建立一個帳戶');
+                    transForm.value = { 
+                        type, amount: null, categoryName: '', categoryIcon: '', 
+                        accountId: accounts.value[0].id, toAccountId: accounts.value[1]?.id || accounts.value[0].id 
+                    };
+                    isTransModalOpen.value = true;
+                };
+
+                const selectCategory = (cat) => {
+                    transForm.value.categoryName = cat.name;
+                    transForm.value.categoryIcon = cat.icon;
+                };
+
+                const submitTransaction = () => {
+                    if (!transForm.value.amount || transForm.value.amount <= 0) return;
+                    if (transForm.value.type !== 'transfer' && !transForm.value.categoryName) return alert('請選擇一個類別');
+                    
+                    const amt = transForm.value.amount;
+                    const acc = accounts.value.find(a => a.id === transForm.value.accountId);
+                    if (!acc) return alert('找不到指定帳戶');
+
+                    if (transForm.value.type === 'expense') {
+                        acc.balance -= amt;
+                    } else if (transForm.value.type === 'income') {
+                        acc.balance += amt;
+                    } else {
+                        if (transForm.value.accountId === transForm.value.toAccountId) return alert('轉出與轉入不可為同帳戶');
+                        const toAcc = accounts.value.find(a => a.id === transForm.value.toAccountId);
+                        if (!toAcc) return;
+                        acc.balance -= amt;
+                        toAcc.balance += amt;
+                        transForm.value.categoryName = transForm.value.categoryName || '資金調度';
+                        transForm.value.categoryIcon = 'fa-money-bill-transfer';
+                    }
+
+                    transactions.value.push({ id: Date.now(), date: new Date().toISOString(), ...transForm.value });
+                    isTransModalOpen.value = false;
+                };
+
+                const openDataMgmt = () => { if(confirm('要清除所有資料？')){ localStorage.removeItem('macaron_accounts_v2'); localStorage.removeItem('macaron_transactions_v2'); location.reload(); } }
+
+                // --- UI Helpers ---
+                const getAccountName = (id) => accounts.value.find(a => a.id === id)?.name || '未知/已刪除';
+                const getAccountColor = (id) => accounts.value.find(a => a.id === id)?.color || '#ccc';
+                const formatDate = (iso) => { const d = new Date(iso); return `${d.getMonth()+1}/${d.getDate()} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`; };
+                const getTransColor = (type) => type === 'expense' ? 'text-rose-500' : (type === 'income' ? 'text-emerald-500' : 'text-slate-500');
+                const getTransBg = (type) => type === 'expense' ? 'bg-rose-500' : (type === 'income' ? 'bg-emerald-500' : 'bg-slate-400');
+
+                return {
+                    accounts, transactions, totalNetWorth, sortedTransactions, macaronPalette, availableIcons, predefinedCategories, currentCategories,
+                    isTransModalOpen, transForm, openTransModal, selectCategory, submitTransaction,
+                    isAccountModalOpen, isEditingAccount, accountForm, openAccountModal, submitAccount, deleteAccount,
+                    openDataMgmt, getAccountName, getAccountColor, formatDate, getTransColor, getTransBg
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
+
