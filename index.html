@@ -3,403 +3,900 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Macaron Finance - 視覺化升級版</title>
+    <title>Macaron Finance</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #fcfcfc; color: #444; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .glass-nav { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); }
-        
-        .slide-up-enter-active, .slide-up-leave-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); opacity: 0; }
+        :root {
+            --cream: #FAF7F2;
+            --warm-white: #FFFEF9;
+            --ink: #1C1917;
+            --ink-soft: #44403C;
+            --ink-muted: #78716C;
+            --ink-faint: #D6D3D1;
+            --rose-dust: #E8D5D0;
+            --sage-dust: #D0E2D8;
+            --gold-dust: #E8DFC8;
+            --sky-dust: #CDD9E8;
+            --blush: #F2E4E1;
+            --moss: #E1EDE7;
+            --sand: #EDE6D3;
+            --pebble: #DBD9D5;
+            --accent-rose: #C0705A;
+            --accent-green: #5A8A6E;
+            --accent-gold: #9A7A3A;
+            --shadow-soft: 0 2px 20px rgba(28,25,23,0.06);
+            --shadow-card: 0 4px 40px rgba(28,25,23,0.08);
+            --radius-card: 20px;
+            --radius-pill: 999px;
+        }
 
-        .color-dot { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.1s; }
-        .color-dot:active { transform: scale(0.9); }
-        .color-dot.active { border-color: #666; box-shadow: 0 0 0 2px #fff inset, 0 0 5px rgba(0,0,0,0.2); }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .icon-btn { padding: 12px; border-radius: 16px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; background: #f8fafc; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .icon-btn.active { background: #e2e8f0; border-color: #94a3b8; }
-        
-        /* 類別按鈕的選取狀態 */
-        .category-btn.active.expense { background-color: #ffe4e6; border-color: #f43f5e; color: #e11d48; }
-        .category-btn.active.income { background-color: #d1fae5; border-color: #10b981; color: #059669; }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--cream);
+            color: var(--ink);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        #app {
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background: var(--warm-white);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 80px rgba(28,25,23,0.12);
+        }
+
+        /* Subtle noise texture */
+        #app::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            max-width: 430px;
+            margin: auto;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.025'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.4;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 0; height: 0; }
+
+        /* Typography */
+        .serif { font-family: 'DM Serif Display', serif; }
+        .mono { font-family: 'Space Mono', monospace; }
+
+        /* Header decoration */
+        .header-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(40px);
+            pointer-events: none;
+        }
+
+        /* Account cards */
+        .account-card {
+            min-width: 148px;
+            padding: 16px;
+            border-radius: var(--radius-card);
+            border: 1px solid rgba(28,25,23,0.06);
+            background: var(--warm-white);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            flex-shrink: 0;
+            box-shadow: var(--shadow-soft);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .account-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .account-card:active { transform: scale(0.97); }
+
+        .account-icon {
+            width: 44px; height: 44px;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 12px;
+            font-size: 18px;
+        }
+
+        /* Transaction items */
+        .trans-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            border-radius: 16px;
+            transition: background 0.15s;
+        }
+        .trans-item:hover { background: var(--cream); }
+
+        .trans-icon {
+            width: 44px; height: 44px;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        /* Bottom nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 430px;
+            background: rgba(255,254,249,0.92);
+            backdrop-filter: blur(20px) saturate(180%);
+            border-top: 1px solid rgba(28,25,23,0.06);
+            padding: 16px 32px 28px;
+            z-index: 40;
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+        }
+
+        .nav-btn {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 6px; cursor: pointer; transition: transform 0.15s;
+            background: none; border: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .nav-btn:active { transform: scale(0.92); }
+
+        .nav-icon-wrap {
+            width: 52px; height: 52px;
+            border-radius: 18px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+
+        .nav-btn.center .nav-icon-wrap {
+            width: 60px; height: 60px;
+            border-radius: 22px;
+            margin-bottom: 4px;
+            box-shadow: 0 8px 24px rgba(28,25,23,0.2);
+        }
+
+        /* Modal overlay */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(28,25,23,0.4);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .modal-sheet {
+            background: var(--warm-white);
+            width: 100%;
+            max-width: 430px;
+            border-radius: 28px 28px 0 0;
+            padding: 32px 28px;
+            box-shadow: 0 -20px 60px rgba(28,25,23,0.15);
+            max-height: 92vh;
+            overflow-y: auto;
+        }
+
+        .modal-handle {
+            width: 36px; height: 4px;
+            background: var(--ink-faint);
+            border-radius: 2px;
+            margin: 0 auto 28px;
+        }
+
+        /* Form inputs */
+        .field {
+            width: 100%;
+            background: var(--cream);
+            border: 1px solid transparent;
+            border-radius: 14px;
+            padding: 14px 18px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--ink);
+            transition: border-color 0.2s;
+            outline: none;
+        }
+        .field:focus { border-color: var(--ink-muted); background: var(--warm-white); }
+        .field::placeholder { color: var(--ink-faint); }
+
+        .amount-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            font-family: 'DM Serif Display', serif;
+            font-size: 52px;
+            color: var(--ink);
+            outline: none;
+            padding: 0;
+        }
+        .amount-input::placeholder { color: var(--ink-faint); }
+
+        /* Category chips */
+        .cat-btn {
+            padding: 10px 8px;
+            border-radius: 14px;
+            border: 1.5px solid var(--ink-faint);
+            background: transparent;
+            cursor: pointer;
+            display: flex; flex-direction: column; align-items: center;
+            gap: 6px;
+            transition: all 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .cat-btn:hover { background: var(--cream); }
+        .cat-btn.active-expense {
+            background: var(--blush);
+            border-color: var(--accent-rose);
+            color: var(--accent-rose);
+        }
+        .cat-btn.active-income {
+            background: var(--moss);
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        /* Color dots */
+        .color-dot {
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .color-dot:hover { transform: scale(1.1); }
+        .color-dot.active {
+            box-shadow: 0 0 0 2px var(--warm-white), 0 0 0 4px var(--ink);
+            transform: scale(1.1);
+        }
+
+        /* Icon picker */
+        .icon-pick {
+            width: 48px; height: 48px;
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            border: 1.5px solid var(--ink-faint);
+            background: transparent;
+            font-size: 18px;
+            color: var(--ink-muted);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .icon-pick.active {
+            background: var(--sand);
+            border-color: var(--ink-soft);
+            color: var(--ink);
+        }
+
+        /* Primary button */
+        .btn-primary {
+            width: 100%;
+            height: 56px;
+            background: var(--ink);
+            color: var(--warm-white);
+            border: none;
+            border-radius: 16px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            transition: opacity 0.15s, transform 0.15s;
+        }
+        .btn-primary:hover { opacity: 0.88; }
+        .btn-primary:active { transform: scale(0.98); }
+
+        /* Animations */
+        .slide-enter-active { animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1); }
+        .slide-leave-active { animation: slideDown 0.25s cubic-bezier(0.32, 0.72, 0, 1); }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes slideDown {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(100%); opacity: 0; }
+        }
+
+        .fade-enter-active { animation: fadeIn 0.2s ease; }
+        .fade-leave-active { animation: fadeOut 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+        /* Section label */
+        .section-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--ink-muted);
+            margin-bottom: 12px;
+        }
+
+        /* Add account card */
+        .add-card {
+            min-width: 100px;
+            padding: 16px 12px;
+            border-radius: var(--radius-card);
+            border: 1.5px dashed var(--ink-faint);
+            background: transparent;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 8px;
+            color: var(--ink-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .add-card:hover { border-color: var(--ink-muted); background: var(--cream); }
+
+        /* Net worth shimmer */
+        .net-worth-num {
+            font-family: 'DM Serif Display', serif;
+            font-size: 42px;
+            color: var(--ink);
+            letter-spacing: -1px;
+            line-height: 1;
+        }
+
+        /* Balance tag */
+        .balance-tag {
+            font-family: 'Space Mono', monospace;
+            font-size: 14px;
+            color: var(--ink-soft);
+            font-weight: 700;
+        }
+
+        /* Date tag */
+        .date-tag {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            color: var(--ink-muted);
+        }
+
+        /* Delete button */
+        .btn-danger {
+            background: var(--blush);
+            color: var(--accent-rose);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .btn-danger:hover { opacity: 0.8; }
+
+        /* Account preview in modal */
+        .acc-preview {
+            width: 88px; height: 88px;
+            border-radius: 28px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 36px;
+            color: white;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            margin: 0 auto 24px;
+        }
+
+        /* Divider group for transactions */
+        .date-divider {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--ink-muted);
+            padding: 8px 16px 4px;
+        }
+
+        /* Summary bar */
+        .summary-bar {
+            display: flex;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--cream);
+            border-radius: 16px;
+            margin-bottom: 20px;
+        }
+        .summary-item { flex: 1; }
+        .summary-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 4px; }
+        .summary-value { font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700; }
+
+        /* Transfer arrow */
+        .select-field {
+            width: 100%;
+            background: transparent;
+            border: none;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ink);
+            outline: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <div id="app" class="max-w-md mx-auto min-h-screen pb-28 relative bg-white overflow-hidden shadow-2xl border border-gray-100">
-        
-        <header class="p-6 pt-10 border-b border-gray-100 mb-6 bg-slate-50/50">
-            <div class="flex justify-between items-center mb-1">
-                <p class="text-sm text-slate-500 font-medium">總資產淨值</p>
-                <button @click="openDataMgmt" class="text-slate-400 hover:text-slate-600 text-xs"><i class="fa-solid fa-hard-drive mr-1"></i>重置本地數據</button>
-            </div>
-            <h1 class="text-4xl font-bold tracking-tight text-slate-900">$ {{ totalNetWorth.toLocaleString() }}</h1>
-            
-            <div class="flex space-x-4 overflow-x-auto no-scrollbar pt-6 -ml-2 pl-2 pb-2">
-                
-                <div v-for="acc in accounts" :key="acc.id" 
-                     class="relative min-w-[140px] p-4 rounded-3xl border border-slate-100 bg-white hover:shadow-md transition-shadow flex-shrink-0">
-                    
-                    <button @click="editAccount(acc)" class="absolute top-4 right-4 text-slate-300 hover:text-slate-600 transition-colors">
-                        <i class="fa-solid fa-pen"></i>
-                    </button>
+<div id="app">
 
-                    <div class="flex items-center space-x-3 mb-3">
-                        <div :style="{ backgroundColor: acc.color }" class="w-12 h-12 rounded-full flex items-center justify-center shadow-inner">
-                            <i :class="['fa-solid', acc.icon]" class="text-white text-xl drop-shadow-sm"></i>
-                        </div>
-                    </div>
-                    <div class="text-sm text-slate-800 font-bold truncate pr-4">{{ acc.name }}</div>
-                    <div class="text-lg font-black text-slate-900 mt-1">$ {{ acc.balance.toLocaleString() }}</div>
-                </div>
+    <!-- ─── HEADER ─── -->
+    <header style="background: var(--cream); padding: 52px 24px 20px; position: relative; overflow: hidden;">
+        <!-- Decorative orbs -->
+        <div class="header-orb" style="width:200px;height:200px;background:var(--rose-dust);top:-60px;right:-40px;opacity:0.7;"></div>
+        <div class="header-orb" style="width:120px;height:120px;background:var(--sky-dust);top:20px;left:-30px;opacity:0.5;"></div>
 
-                <button @click="openAccountModal(null)" 
-                        class="min-w-[140px] p-4 rounded-3xl border-2 border-dashed border-slate-200 hover:border-slate-300 hover:bg-slate-50 flex flex-col items-center justify-center text-slate-400 transition-all flex-shrink-0">
-                    <i class="fa-solid fa-plus text-2xl mb-2"></i>
-                    <span class="text-xs font-bold">新增帳戶</span>
+        <div style="position:relative;z-index:1;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+                <p class="section-label" style="margin-bottom:0;">總資產淨值</p>
+                <button @click="openDataMgmt" style="background:none;border:none;cursor:pointer;font-size:11px;font-weight:600;letter-spacing:0.05em;color:var(--ink-muted);font-family:'DM Sans',sans-serif;padding:4px 10px;border-radius:8px;border:1px solid var(--ink-faint);transition:all 0.15s;" onmouseover="this.style.background='rgba(28,25,23,0.05)'" onmouseout="this.style.background='none'">
+                    重置資料
                 </button>
             </div>
-        </header>
 
-        <main class="px-6">
-            <h2 class="text-lg font-bold text-slate-800 mb-4">近期明細</h2>
-            <div v-if="transactions.length === 0" class="text-center py-16 rounded-3xl bg-slate-50">
-                <i class="fa-solid fa-receipt text-4xl text-slate-200 mb-4"></i>
-                <p class="text-slate-400 text-sm font-medium">還沒有任何交易紀錄哦</p>
+            <div class="net-worth-num">
+                <span style="font-size:28px;opacity:0.4;vertical-align:top;line-height:1.5;font-family:'DM Sans',sans-serif;font-weight:300;">$</span>{{ totalNetWorth.toLocaleString() }}
             </div>
-            
-            <div class="space-y-3">
-                <div v-for="t in sortedTransactions" :key="t.id" class="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 transition-colors">
-                    <div class="flex items-center space-x-4">
-                        <div :class="getTransBg(t.type)" class="w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-sm">
-                            <i :class="['fa-solid', t.categoryIcon, 'text-lg']"></i>
-                        </div>
-                        <div>
-                            <div class="font-bold text-slate-800">{{ t.categoryName }}</div>
-                            <div class="flex items-center text-[11px] text-slate-500 font-medium mt-0.5">
-                                <span class="w-2 h-2 rounded-full mr-1.5" :style="{ backgroundColor: getAccountColor(t.accountId) }"></span>
-                                {{ getAccountName(t.accountId) }}
-                                <span v-if="t.type === 'transfer'" class="mx-1">→</span>
-                                <span v-if="t.type === 'transfer'" class="w-2 h-2 rounded-full mx-1.5" :style="{ backgroundColor: getAccountColor(t.toAccountId) }"></span>
-                                <span v-if="t.type === 'transfer'">{{ getAccountName(t.toAccountId) }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <div :class="getTransColor(t.type)" class="font-black text-lg">
-                            {{ t.type === 'expense' ? '-' : (t.type === 'income' ? '+' : '') }}$ {{ t.amount.toLocaleString() }}
-                        </div>
-                        <div class="text-[10px] text-slate-400 font-mono font-medium">{{ formatDate(t.date) }}</div>
-                    </div>
+
+            <!-- Summary bar -->
+            <div class="summary-bar" style="margin-top:20px;">
+                <div class="summary-item">
+                    <div class="summary-label">本月支出</div>
+                    <div class="summary-value" style="color:var(--accent-rose);">−{{ monthExpense.toLocaleString() }}</div>
+                </div>
+                <div style="width:1px;background:var(--ink-faint);"></div>
+                <div class="summary-item" style="padding-left:12px;">
+                    <div class="summary-label">本月收入</div>
+                    <div class="summary-value" style="color:var(--accent-green);">+{{ monthIncome.toLocaleString() }}</div>
                 </div>
             </div>
-        </main>
 
-        <div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md glass-nav border-t border-slate-100 p-4 pb-6 z-40 rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.05)] flex justify-around">
-            <button @click="openTransModal('expense')" class="flex flex-col items-center space-y-1 text-rose-500 hover:text-rose-600 transition active:scale-95">
-                <div class="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center text-xl"><i class="fa-solid fa-minus"></i></div>
-                <span class="font-bold text-[10px]">記支出</span>
-            </button>
-            <button @click="openTransModal('transfer')" class="flex flex-col items-center space-y-1 text-slate-500 hover:text-slate-600 transition active:scale-95 mt-[-15px]">
-                <div class="w-14 h-14 rounded-full bg-slate-100 border-4 border-white shadow-sm flex items-center justify-center text-xl"><i class="fa-solid fa-money-bill-transfer"></i></div>
-                <span class="font-bold text-[10px]">調度</span>
-            </button>
-            <button @click="openTransModal('income')" class="flex flex-col items-center space-y-1 text-emerald-500 hover:text-emerald-600 transition active:scale-95">
-                <div class="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-xl"><i class="fa-solid fa-plus"></i></div>
-                <span class="font-bold text-[10px]">記收入</span>
-            </button>
+            <!-- Account cards -->
+            <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:4px;margin:-4px 0 0;">
+                <div v-for="acc in accounts" :key="acc.id" class="account-card" @click="editAccount(acc)">
+                    <div class="account-icon" :style="{ background: acc.color + '44', color: acc.color }">
+                        <i :class="['fa-solid', acc.icon]"></i>
+                    </div>
+                    <div style="font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:116px;">{{ acc.name }}</div>
+                    <div class="balance-tag">$ {{ acc.balance.toLocaleString() }}</div>
+                    <!-- Color stripe -->
+                    <div style="position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 20px 20px;" :style="{ background: acc.color }"></div>
+                </div>
+
+                <button @click="openAccountModal(null)" class="add-card">
+                    <i class="fa-solid fa-plus" style="font-size:18px;"></i>
+                    <span style="font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;">新增</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ─── MAIN ─── -->
+    <main style="padding: 24px 20px 120px;">
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h2 style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--ink);">近期紀錄</h2>
+            <span style="font-size:11px;font-weight:600;color:var(--ink-muted);letter-spacing:0.05em;">共 {{ transactions.length }} 筆</span>
         </div>
 
-        <transition name="slide-up">
-            <div v-if="isTransModalOpen" class="fixed inset-0 z-50 flex items-end justify-center">
-                <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="isTransModalOpen = false"></div>
-                <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 shadow-2xl">
-                    
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-2xl font-black text-slate-800">{{ transForm.type === 'expense' ? '新增支出' : (transForm.type === 'income' ? '新增收入' : '資金調度') }}</h3>
+        <!-- Empty state -->
+        <div v-if="transactions.length === 0" style="text-align:center;padding:60px 20px;background:var(--cream);border-radius:20px;">
+            <div style="font-size:48px;margin-bottom:12px;opacity:0.2;">₿</div>
+            <p style="font-size:14px;color:var(--ink-muted);font-weight:500;">還沒有任何交易紀錄</p>
+            <p style="font-size:12px;color:var(--ink-faint);margin-top:4px;">點下方按鈕開始記帳吧</p>
+        </div>
+
+        <!-- Transactions grouped by date -->
+        <div v-for="(group, date) in groupedTransactions" :key="date">
+            <div class="date-divider">{{ date }}</div>
+            <div v-for="t in group" :key="t.id" class="trans-item">
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <div class="trans-icon" :style="getTransStyle(t.type)">
+                        <i :class="['fa-solid', t.categoryIcon]"></i>
                     </div>
-                    
-                    <form @submit.prevent="submitTransaction" class="space-y-6">
-                        <div class="relative">
-                            <span class="absolute left-0 bottom-2 text-2xl font-black text-slate-300">$</span>
-                            <input type="number" v-model.number="transForm.amount" required placeholder="0" class="w-full text-5xl font-black border-b-2 border-slate-100 pb-2 pl-8 focus:outline-none focus:border-slate-400 placeholder:text-slate-200 transition-colors bg-transparent">
+                    <div>
+                        <div style="font-size:15px;font-weight:600;color:var(--ink);">{{ t.categoryName }}</div>
+                        <div style="display:flex;align-items:center;gap:6px;margin-top:3px;">
+                            <span style="width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0;" :style="{ background: getAccountColor(t.accountId) }"></span>
+                            <span style="font-size:11px;color:var(--ink-muted);font-weight:500;">{{ getAccountName(t.accountId) }}</span>
+                            <template v-if="t.type === 'transfer'">
+                                <i class="fa-solid fa-arrow-right" style="font-size:9px;color:var(--ink-faint);"></i>
+                                <span style="width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0;" :style="{ background: getAccountColor(t.toAccountId) }"></span>
+                                <span style="font-size:11px;color:var(--ink-muted);font-weight:500;">{{ getAccountName(t.toAccountId) }}</span>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-family:'Space Mono',monospace;font-size:15px;font-weight:700;" :style="{ color: getAmtColor(t.type) }">
+                        {{ t.type === 'expense' ? '−' : (t.type === 'income' ? '+' : '') }}{{ t.amount.toLocaleString() }}
+                    </div>
+                    <div class="date-tag">{{ formatTime(t.date) }}</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ─── BOTTOM NAV ─── -->
+    <div class="bottom-nav">
+        <button class="nav-btn" @click="openTransModal('expense')">
+            <div class="nav-icon-wrap" style="background:var(--blush);color:var(--accent-rose);">
+                <i class="fa-solid fa-minus"></i>
+            </div>
+            <span style="font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--accent-rose);">支出</span>
+        </button>
+        <button class="nav-btn center" @click="openTransModal('transfer')">
+            <div class="nav-icon-wrap" style="background:var(--ink);color:var(--warm-white);">
+                <i class="fa-solid fa-money-bill-transfer"></i>
+            </div>
+            <span style="font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--ink-muted);">調度</span>
+        </button>
+        <button class="nav-btn" @click="openTransModal('income')">
+            <div class="nav-icon-wrap" style="background:var(--moss);color:var(--accent-green);">
+                <i class="fa-solid fa-plus"></i>
+            </div>
+            <span style="font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--accent-green);">收入</span>
+        </button>
+    </div>
+
+    <!-- ─── TRANSACTION MODAL ─── -->
+    <transition name="fade">
+        <div v-if="isTransModalOpen" class="modal-overlay" @click.self="isTransModalOpen = false">
+            <transition name="slide">
+                <div v-if="isTransModalOpen" class="modal-sheet">
+                    <div class="modal-handle"></div>
+
+                    <!-- Type indicator -->
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
+                        <div :style="getTypeIndicator(transForm.type)" style="width:10px;height:10px;border-radius:50%;flex-shrink:0;"></div>
+                        <h3 style="font-family:'DM Serif Display',serif;font-size:26px;color:var(--ink);">
+                            {{ transForm.type === 'expense' ? '記錄支出' : (transForm.type === 'income' ? '記錄收入' : '資金調度') }}
+                        </h3>
+                    </div>
+
+                    <form @submit.prevent="submitTransaction">
+                        <!-- Amount -->
+                        <div style="background:var(--cream);border-radius:18px;padding:20px 20px 16px;margin-bottom:20px;">
+                            <div class="section-label">金額</div>
+                            <div style="display:flex;align-items:baseline;gap:8px;">
+                                <span style="font-family:'DM Serif Display',serif;font-size:32px;color:var(--ink-faint);">$</span>
+                                <input type="number" v-model.number="transForm.amount" class="amount-input" placeholder="0" required min="1">
+                            </div>
                         </div>
 
-                        <div v-if="transForm.type !== 'transfer'">
-                            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">選擇類別</label>
-                            <div class="grid grid-cols-4 gap-3 max-h-[160px] overflow-y-auto no-scrollbar p-1">
+                        <!-- Category -->
+                        <div v-if="transForm.type !== 'transfer'" style="margin-bottom:20px;">
+                            <div class="section-label">類別</div>
+                            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-height:180px;overflow-y:auto;padding:2px;">
                                 <button v-for="cat in currentCategories" :key="cat.name" type="button"
                                         @click="selectCategory(cat)"
-                                        :class="['icon-btn category-btn', transForm.type, { active: transForm.categoryName === cat.name }]">
-                                    <i :class="['fa-solid', cat.icon, 'text-xl mb-1.5']"></i>
-                                    <span class="text-[10px] font-bold">{{ cat.name }}</span>
+                                        :class="['cat-btn', transForm.categoryName === cat.name ? (transForm.type === 'expense' ? 'active-expense' : 'active-income') : '']">
+                                    <i :class="['fa-solid', cat.icon]" style="font-size:18px;"></i>
+                                    <span style="font-size:10px;font-weight:700;">{{ cat.name }}</span>
                                 </button>
                             </div>
                         </div>
-                        <div v-else>
-                            <input type="text" v-model="transForm.categoryName" required placeholder="轉帳備註 (例如: ATM 提款)" class="w-full bg-slate-50 px-4 py-3.5 rounded-2xl focus:outline-none font-medium text-sm">
+                        <div v-else style="margin-bottom:20px;">
+                            <div class="section-label">備註</div>
+                            <input type="text" v-model="transForm.categoryName" class="field" placeholder="ATM 提款 / 備用金轉移…">
                         </div>
 
-                        <div class="flex gap-3 bg-slate-50 p-2 rounded-2xl">
-                            <div class="flex-1">
-                                <label class="block text-[10px] font-bold text-slate-400 ml-2 mb-1">{{ transForm.type === 'transfer' ? '從 (轉出)' : '扣款/入帳帳戶' }}</label>
-                                <select v-model="transForm.accountId" class="w-full bg-transparent px-2 py-1 outline-none text-sm font-bold text-slate-700">
+                        <!-- Account selector -->
+                        <div style="background:var(--cream);border-radius:18px;padding:16px 20px;margin-bottom:24px;display:flex;gap:16px;align-items:center;">
+                            <div style="flex:1;">
+                                <div class="section-label">{{ transForm.type === 'transfer' ? '從 (轉出)' : '帳戶' }}</div>
+                                <select v-model="transForm.accountId" class="select-field">
                                     <option v-for="a in accounts" :value="a.id">{{ a.name }}</option>
                                 </select>
                             </div>
-                            <div v-if="transForm.type === 'transfer'" class="flex items-center text-slate-300"><i class="fa-solid fa-arrow-right"></i></div>
-                            <div class="flex-1" v-if="transForm.type === 'transfer'">
-                                <label class="block text-[10px] font-bold text-slate-400 ml-2 mb-1">到 (轉入)</label>
-                                <select v-model="transForm.toAccountId" class="w-full bg-transparent px-2 py-1 outline-none text-sm font-bold text-slate-700">
-                                    <option v-for="a in accounts" :value="a.id" :disabled="a.id === transForm.accountId">{{ a.name }}</option>
-                                </select>
-                            </div>
+                            <template v-if="transForm.type === 'transfer'">
+                                <div style="color:var(--ink-faint);flex-shrink:0;"><i class="fa-solid fa-arrow-right-arrow-left"></i></div>
+                                <div style="flex:1;">
+                                    <div class="section-label">到 (轉入)</div>
+                                    <select v-model="transForm.toAccountId" class="select-field">
+                                        <option v-for="a in accounts" :value="a.id" :disabled="a.id === transForm.accountId">{{ a.name }}</option>
+                                    </select>
+                                </div>
+                            </template>
                         </div>
 
-                        <button type="submit" class="w-full py-4.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition active:scale-95 shadow-lg flex justify-center items-center h-14">
-                            確認儲存
-                        </button>
+                        <button type="submit" class="btn-primary">確認儲存</button>
                     </form>
                 </div>
-            </div>
-        </transition>
+            </transition>
+        </div>
+    </transition>
 
-        <transition name="slide-up">
-            <div v-if="isAccountModalOpen" class="fixed inset-0 z-50 flex items-end justify-center">
-                <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="isAccountModalOpen = false"></div>
-                <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 shadow-2xl max-h-[90vh] flex flex-col">
-                    
-                    <div class="flex justify-between items-center mb-6 shrink-0">
-                        <h3 class="text-2xl font-black text-slate-800">{{ isEditingAccount ? '編輯帳戶' : '新增帳戶' }}</h3>
-                        <button v-if="isEditingAccount" @click="deleteAccount" class="text-rose-500 hover:bg-rose-50 px-3 py-1.5 rounded-xl text-sm font-bold transition">
-                            <i class="fa-solid fa-trash-can mr-1"></i>刪除
+    <!-- ─── ACCOUNT MODAL ─── -->
+    <transition name="fade">
+        <div v-if="isAccountModalOpen" class="modal-overlay" @click.self="isAccountModalOpen = false">
+            <transition name="slide">
+                <div v-if="isAccountModalOpen" class="modal-sheet">
+                    <div class="modal-handle"></div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+                        <h3 style="font-family:'DM Serif Display',serif;font-size:26px;color:var(--ink);">
+                            {{ isEditingAccount ? '編輯帳戶' : '新增帳戶' }}
+                        </h3>
+                        <button v-if="isEditingAccount" @click="deleteAccount" class="btn-danger">
+                            <i class="fa-solid fa-trash-can" style="margin-right:6px;"></i>刪除
                         </button>
                     </div>
-                    
-                    <div class="overflow-y-auto no-scrollbar flex-1 pb-4">
-                        <div class="flex justify-center mb-8">
-                            <div :style="{ backgroundColor: accountForm.color }" class="w-24 h-24 rounded-[2rem] flex items-center justify-center shadow-inner transition-colors duration-300">
-                                <i :class="['fa-solid', accountForm.icon]" class="text-white text-5xl drop-shadow-md"></i>
+
+                    <!-- Preview -->
+                    <div class="acc-preview" :style="{ background: accountForm.color }">
+                        <i :class="['fa-solid', accountForm.icon]" style="color:white;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2));"></i>
+                    </div>
+
+                    <form @submit.prevent="submitAccount" style="display:flex;flex-direction:column;gap:20px;">
+                        <div style="display:flex;flex-direction:column;gap:10px;">
+                            <input type="text" v-model="accountForm.name" class="field" placeholder="帳戶名稱（如：國泰銀行）" required>
+                            <input type="number" v-model.number="accountForm.balance" class="field" placeholder="目前餘額" required>
+                        </div>
+
+                        <!-- Color palette -->
+                        <div>
+                            <div class="section-label">帳戶底色</div>
+                            <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:10px;">
+                                <div v-for="color in macaronPalette" :key="color" @click="accountForm.color = color"
+                                     :class="['color-dot', { active: accountForm.color === color }]"
+                                     :style="{ background: color }">
+                                </div>
                             </div>
                         </div>
 
-                        <form @submit.prevent="submitAccount" class="space-y-6">
-                            <div class="space-y-3">
-                                <input type="text" v-model="accountForm.name" required placeholder="帳戶名稱 (e.g. 國泰世華、零錢包)" class="w-full bg-slate-50 border border-slate-100 px-5 py-4 rounded-2xl focus:outline-none focus:border-slate-300 font-bold">
-                                <input type="number" v-model.number="accountForm.balance" required placeholder="目前餘額" class="w-full bg-slate-50 border border-slate-100 px-5 py-4 rounded-2xl focus:outline-none focus:border-slate-300 font-bold">
-                            </div>
-
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">設定底色</label>
-                                <div class="grid grid-cols-8 gap-3">
-                                    <div v-for="color in macaronPalette" :key="color" @click="accountForm.color = color"
-                                         :style="{ backgroundColor: color }" :class="['color-dot', { active: accountForm.color === color }]">
-                                    </div>
+                        <!-- Icon picker -->
+                        <div>
+                            <div class="section-label">帳戶圖示</div>
+                            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;max-height:160px;overflow-y:auto;padding:2px;">
+                                <div v-for="icon in availableIcons" :key="icon" @click="accountForm.icon = icon"
+                                     :class="['icon-pick', { active: accountForm.icon === icon }]">
+                                    <i :class="['fa-solid', icon]"></i>
                                 </div>
                             </div>
+                        </div>
 
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">選擇圖示</label>
-                                <div class="grid grid-cols-6 gap-2 max-h-[160px] overflow-y-auto no-scrollbar p-1">
-                                    <div v-for="icon in availableIcons" :key="icon" @click="accountForm.icon = icon"
-                                         :class="['icon-btn text-slate-400 text-xl', { active: accountForm.icon === icon }]">
-                                        <i :class="['fa-solid', icon]"></i>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button type="submit" class="w-full py-4.5 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition shadow-lg h-14">
-                                {{ isEditingAccount ? '儲存變更' : '建立帳戶' }}
-                            </button>
-                        </form>
-                    </div>
+                        <button type="submit" class="btn-primary">{{ isEditingAccount ? '儲存變更' : '建立帳戶' }}</button>
+                    </form>
                 </div>
-            </div>
-        </transition>
+            </transition>
+        </div>
+    </transition>
 
-    </div>
+</div>
 
-    <script>
-        const { createApp, ref, computed, watch, onMounted } = Vue;
+<script>
+const { createApp, ref, computed, watch, onMounted } = Vue;
 
-        createApp({
-            setup() {
-                // --- 核心數據 ---
-                const accounts = ref([]);
-                const transactions = ref([]);
+createApp({
+    setup() {
+        const accounts = ref([]);
+        const transactions = ref([]);
+        const isTransModalOpen = ref(false);
+        const isAccountModalOpen = ref(false);
+        const isEditingAccount = ref(false);
 
-                // --- 狀態控制 ---
-                const isTransModalOpen = ref(false);
-                const isAccountModalOpen = ref(false);
-                const isEditingAccount = ref(false); // 判斷是新增還是編輯
+        const predefinedCategories = {
+            expense: [
+                { name: '餐飲', icon: 'fa-utensils' }, { name: '飲料', icon: 'fa-mug-hot' },
+                { name: '交通', icon: 'fa-train-subway' }, { name: '加油', icon: 'fa-gas-pump' },
+                { name: '購物', icon: 'fa-bag-shopping' }, { name: '日常', icon: 'fa-basket-shopping' },
+                { name: '娛樂', icon: 'fa-gamepad' }, { name: '電影', icon: 'fa-film' },
+                { name: '醫療', icon: 'fa-briefcase-medical' }, { name: '房屋', icon: 'fa-house-chimney' },
+                { name: '水電', icon: 'fa-bolt' }, { name: '寵物', icon: 'fa-paw' }
+            ],
+            income: [
+                { name: '薪資', icon: 'fa-money-bill-wave' }, { name: '獎金', icon: 'fa-gift' },
+                { name: '投資', icon: 'fa-chart-line' }, { name: '兼職', icon: 'fa-user-tie' },
+                { name: '利息', icon: 'fa-coins' }, { name: '其他', icon: 'fa-piggy-bank' }
+            ]
+        };
 
-                // --- 類別配置 (含 Icon) ---
-                const predefinedCategories = {
-                    expense: [
-                        { name: '餐飲', icon: 'fa-utensils' }, { name: '飲料', icon: 'fa-mug-hot' },
-                        { name: '交通', icon: 'fa-train-subway' }, { name: '加油', icon: 'fa-gas-pump' },
-                        { name: '購物', icon: 'fa-bag-shopping' }, { name: '日常', icon: 'fa-basket-shopping' },
-                        { name: '娛樂', icon: 'fa-gamepad' }, { name: '電影', icon: 'fa-film' },
-                        { name: '醫療', icon: 'fa-briefcase-medical' }, { name: '房屋', icon: 'fa-house-chimney' },
-                        { name: '水電', icon: 'fa-bolt' }, { name: '寵物', icon: 'fa-paw' }
-                    ],
-                    income: [
-                        { name: '薪資', icon: 'fa-money-bill-wave' }, { name: '獎金', icon: 'fa-gift' },
-                        { name: '投資', icon: 'fa-chart-line' }, { name: '兼職', icon: 'fa-user-tie' },
-                        { name: '利息', icon: 'fa-coins' }, { name: '其他', icon: 'fa-piggy-bank' }
-                    ]
-                };
+        const macaronPalette = [
+            '#D4A5A5','#E8C4A0','#E8D5A0','#B8D4B8','#A0C4D8','#C4B8D4','#D4B8C8','#C8D4B8',
+            '#F0C8C0','#C8E0E8','#D8C0E0','#C0D8C0','#E0D0B8','#B8C8D8','#D0B8B8','#C8D0E0',
+            '#B0C8B8','#C8B8A8','#A8B8C8','#D0C8A8','#B8D0C8','#C0B8D0','#D8C8B8','#B0D0B8',
+            '#8AABBC','#7A9E8E','#A07A5A','#6A8AAA','#9A7A9A','#AA8A7A','#7AAA8A','#8A7AAA'
+        ];
 
-                // --- 擴充的 32色馬卡龍色 ---
-                const macaronPalette = [
-                    '#FFB3BA', '#FFDAC1', '#FFF9C4', '#CBF0F8', '#D6EAF8', '#E6E6FA', '#FADBD8', '#FDEBD0',
-                    '#FFC3A0', '#FFEDD8', '#B9F2FF', '#A9DEF9', '#E0BBE4', '#F8C471', '#F9E79F', '#C1E1C1',
-                    '#D4EFDF', '#D1F2EB', '#E8F8F5', '#FAD7A0', '#F5CBA7', '#EDBB99', '#D7BDE2', '#EBDEF0',
-                    '#EAECEE', '#D6DBDF', '#AED6F1', '#A3E4D7', '#A9DFBF', '#F9E79F', '#F5B041', '#5DADE2'
+        const availableIcons = [
+            'fa-building-columns','fa-wallet','fa-piggy-bank','fa-credit-card','fa-money-check-dollar',
+            'fa-vault','fa-coins','fa-sack-dollar','fa-chart-pie','fa-apple','fa-android',
+            'fa-bitcoin','fa-house','fa-car','fa-motorcycle','fa-plane','fa-train','fa-bus',
+            'fa-cart-shopping','fa-briefcase','fa-graduation-cap','fa-heart','fa-star',
+            'fa-cat','fa-dog','fa-coffee','fa-burger','fa-bolt','fa-gem','fa-crown',
+            'fa-mobile-screen','fa-laptop','fa-paypal','fa-chart-line','fa-seedling'
+        ];
+
+        const transForm = ref({ type: 'expense', amount: null, categoryName: '', categoryIcon: '', accountId: null, toAccountId: null });
+        const accountForm = ref({ id: null, name: '', balance: null, icon: '', color: '' });
+
+        onMounted(() => {
+            const savedAcc = localStorage.getItem('macaron_accounts_v3');
+            const savedTrans = localStorage.getItem('macaron_transactions_v3');
+            if (!savedAcc) {
+                accounts.value = [
+                    { id: 1, name: '常用錢包', balance: 2500, icon: 'fa-wallet', color: '#D4A5A5' },
+                    { id: 2, name: '國泰銀行', balance: 150000, icon: 'fa-building-columns', color: '#A0C4D8' }
                 ];
+            } else { accounts.value = JSON.parse(savedAcc); }
+            if (savedTrans) transactions.value = JSON.parse(savedTrans);
+        });
 
-                // --- 擴充的多樣化 Icon 庫 ---
-                const availableIcons = [
-                    // 金融/帳戶
-                    'fa-building-columns', 'fa-wallet', 'fa-piggy-bank', 'fa-credit-card', 'fa-money-check-dollar', 'fa-vault', 'fa-coins', 'fa-sack-dollar', 'fa-chart-pie',
-                    // 品牌/支付
-                    'fa-apple', 'fa-android', 'fa-bitcoin', 'fa-paypal', 'fa-line',
-                    // 生活/交通
-                    'fa-house', 'fa-car', 'fa-motorcycle', 'fa-plane', 'fa-train', 'fa-bus', 'fa-cart-shopping',
-                    // 其他/趣味
-                    'fa-briefcase', 'fa-graduation-cap', 'fa-heart', 'fa-star', 'fa-cat', 'fa-dog', 'fa-coffee', 'fa-burger', 'fa-bolt', 'fa-gem', 'fa-crown', 'fa-mobile-screen', 'fa-laptop'
-                ];
+        watch(accounts, v => localStorage.setItem('macaron_accounts_v3', JSON.stringify(v)), { deep: true });
+        watch(transactions, v => localStorage.setItem('macaron_transactions_v3', JSON.stringify(v)), { deep: true });
 
-                // --- 表單數據 ---
-                const transForm = ref({ type: 'expense', amount: null, categoryName: '', categoryIcon: '', accountId: null, toAccountId: null });
-                const accountForm = ref({ id: null, name: '', balance: null, icon: '', color: '' });
+        const totalNetWorth = computed(() => accounts.value.reduce((s, a) => s + a.balance, 0));
+        const sortedTransactions = computed(() => [...transactions.value].sort((a, b) => new Date(b.date) - new Date(a.date)));
+        const currentCategories = computed(() => transForm.value.type === 'transfer' ? [] : predefinedCategories[transForm.value.type]);
 
-                // --- 初始化與儲存 ---
-                onMounted(() => {
-                    const savedAcc = localStorage.getItem('macaron_accounts_v2');
-                    const savedTrans = localStorage.getItem('macaron_transactions_v2');
-                    
-                    if (!savedAcc) {
-                        accounts.value = [
-                            { id: 1, name: '常用錢包', balance: 2500, icon: 'fa-wallet', color: '#FFB3BA' },
-                            { id: 2, name: '國泰銀行', balance: 150000, icon: 'fa-building-columns', color: '#CBF0F8' }
-                        ];
-                    } else { accounts.value = JSON.parse(savedAcc); }
-                    if (savedTrans) transactions.value = JSON.parse(savedTrans);
-                });
+        const monthExpense = computed(() => {
+            const now = new Date();
+            return transactions.value
+                .filter(t => t.type === 'expense' && new Date(t.date).getMonth() === now.getMonth() && new Date(t.date).getFullYear() === now.getFullYear())
+                .reduce((s, t) => s + t.amount, 0);
+        });
 
-                watch(accounts, (v) => localStorage.setItem('macaron_accounts_v2', JSON.stringify(v)), { deep: true });
-                watch(transactions, (v) => localStorage.setItem('macaron_transactions_v2', JSON.stringify(v)), { deep: true });
+        const monthIncome = computed(() => {
+            const now = new Date();
+            return transactions.value
+                .filter(t => t.type === 'income' && new Date(t.date).getMonth() === now.getMonth() && new Date(t.date).getFullYear() === now.getFullYear())
+                .reduce((s, t) => s + t.amount, 0);
+        });
 
-                // --- 計算屬性 ---
-                const totalNetWorth = computed(() => accounts.value.reduce((s, a) => s + a.balance, 0));
-                const sortedTransactions = computed(() => [...transactions.value].sort((a, b) => new Date(b.date) - new Date(a.date)));
-                const currentCategories = computed(() => transForm.value.type === 'transfer' ? [] : predefinedCategories[transForm.value.type]);
+        const groupedTransactions = computed(() => {
+            const groups = {};
+            sortedTransactions.value.forEach(t => {
+                const d = new Date(t.date);
+                const today = new Date();
+                const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+                let label;
+                if (d.toDateString() === today.toDateString()) label = '今天';
+                else if (d.toDateString() === yesterday.toDateString()) label = '昨天';
+                else label = `${d.getMonth() + 1} 月 ${d.getDate()} 日`;
+                if (!groups[label]) groups[label] = [];
+                groups[label].push(t);
+            });
+            return groups;
+        });
 
-                // --- 帳戶維護邏輯 (新增/編輯/刪除) ---
-                const openAccountModal = (acc) => {
-                    if (acc) {
-                        // 編輯模式
-                        isEditingAccount.value = true;
-                        accountForm.value = { ...acc };
-                    } else {
-                        // 新增模式
-                        isEditingAccount.value = false;
-                        accountForm.value = { id: null, name: '', balance: null, icon: 'fa-building-columns', color: macaronPalette[Math.floor(Math.random()*macaronPalette.length)] };
-                    }
-                    isAccountModalOpen.value = true;
-                };
-
-                const submitAccount = () => {
-                    if(!accountForm.value.name || accountForm.value.balance === null) return;
-                    
-                    if (isEditingAccount.value) {
-                        // 更新現有帳戶
-                        const index = accounts.value.findIndex(a => a.id === accountForm.value.id);
-                        if (index !== -1) {
-                            // 計算差額調整 (非正規會計做法，但符合個人記帳彈性)
-                            accounts.value[index] = { ...accountForm.value };
-                        }
-                    } else {
-                        // 新增帳戶
-                        accounts.value.push({ id: Date.now(), ...accountForm.value });
-                    }
-                    isAccountModalOpen.value = false;
-                };
-
-                const deleteAccount = () => {
-                    if (accounts.value.length <= 1) {
-                        alert('必須至少保留一個帳戶！');
-                        return;
-                    }
-                    if (confirm(`確定要刪除「${accountForm.value.name}」嗎？相關歷史紀錄仍會保留但將顯示為未知帳戶。`)) {
-                        accounts.value = accounts.value.filter(a => a.id !== accountForm.value.id);
-                        isAccountModalOpen.value = false;
-                    }
-                };
-
-                // --- 交易邏輯 ---
-                const openTransModal = (type) => {
-                    if(accounts.value.length === 0) return alert('請先建立一個帳戶');
-                    transForm.value = { 
-                        type, amount: null, categoryName: '', categoryIcon: '', 
-                        accountId: accounts.value[0].id, toAccountId: accounts.value[1]?.id || accounts.value[0].id 
-                    };
-                    isTransModalOpen.value = true;
-                };
-
-                const selectCategory = (cat) => {
-                    transForm.value.categoryName = cat.name;
-                    transForm.value.categoryIcon = cat.icon;
-                };
-
-                const submitTransaction = () => {
-                    if (!transForm.value.amount || transForm.value.amount <= 0) return;
-                    if (transForm.value.type !== 'transfer' && !transForm.value.categoryName) return alert('請選擇一個類別');
-                    
-                    const amt = transForm.value.amount;
-                    const acc = accounts.value.find(a => a.id === transForm.value.accountId);
-                    if (!acc) return alert('找不到指定帳戶');
-
-                    if (transForm.value.type === 'expense') {
-                        acc.balance -= amt;
-                    } else if (transForm.value.type === 'income') {
-                        acc.balance += amt;
-                    } else {
-                        if (transForm.value.accountId === transForm.value.toAccountId) return alert('轉出與轉入不可為同帳戶');
-                        const toAcc = accounts.value.find(a => a.id === transForm.value.toAccountId);
-                        if (!toAcc) return;
-                        acc.balance -= amt;
-                        toAcc.balance += amt;
-                        transForm.value.categoryName = transForm.value.categoryName || '資金調度';
-                        transForm.value.categoryIcon = 'fa-money-bill-transfer';
-                    }
-
-                    transactions.value.push({ id: Date.now(), date: new Date().toISOString(), ...transForm.value });
-                    isTransModalOpen.value = false;
-                };
-
-                const openDataMgmt = () => { if(confirm('要清除所有資料？')){ localStorage.removeItem('macaron_accounts_v2'); localStorage.removeItem('macaron_transactions_v2'); location.reload(); } }
-
-                // --- UI Helpers ---
-                const getAccountName = (id) => accounts.value.find(a => a.id === id)?.name || '未知/已刪除';
-                const getAccountColor = (id) => accounts.value.find(a => a.id === id)?.color || '#ccc';
-                const formatDate = (iso) => { const d = new Date(iso); return `${d.getMonth()+1}/${d.getDate()} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`; };
-                const getTransColor = (type) => type === 'expense' ? 'text-rose-500' : (type === 'income' ? 'text-emerald-500' : 'text-slate-500');
-                const getTransBg = (type) => type === 'expense' ? 'bg-rose-500' : (type === 'income' ? 'bg-emerald-500' : 'bg-slate-400');
-
-                return {
-                    accounts, transactions, totalNetWorth, sortedTransactions, macaronPalette, availableIcons, predefinedCategories, currentCategories,
-                    isTransModalOpen, transForm, openTransModal, selectCategory, submitTransaction,
-                    isAccountModalOpen, isEditingAccount, accountForm, openAccountModal, submitAccount, deleteAccount,
-                    openDataMgmt, getAccountName, getAccountColor, formatDate, getTransColor, getTransBg
-                };
+        const openAccountModal = (acc) => {
+            if (acc) {
+                isEditingAccount.value = true;
+                accountForm.value = { ...acc };
+            } else {
+                isEditingAccount.value = false;
+                accountForm.value = { id: null, name: '', balance: null, icon: 'fa-building-columns', color: macaronPalette[Math.floor(Math.random() * macaronPalette.length)] };
             }
-        }).mount('#app');
-    </script>
+            isAccountModalOpen.value = true;
+        };
+
+        const editAccount = (acc) => openAccountModal(acc);
+
+        const submitAccount = () => {
+            if (!accountForm.value.name || accountForm.value.balance === null) return;
+            if (isEditingAccount.value) {
+                const index = accounts.value.findIndex(a => a.id === accountForm.value.id);
+                if (index !== -1) accounts.value[index] = { ...accountForm.value };
+            } else {
+                accounts.value.push({ id: Date.now(), ...accountForm.value });
+            }
+            isAccountModalOpen.value = false;
+        };
+
+        const deleteAccount = () => {
+            if (accounts.value.length <= 1) { alert('必須至少保留一個帳戶！'); return; }
+            if (confirm(`確定要刪除「${accountForm.value.name}」嗎？`)) {
+                accounts.value = accounts.value.filter(a => a.id !== accountForm.value.id);
+                isAccountModalOpen.value = false;
+            }
+        };
+
+        const openTransModal = (type) => {
+            if (accounts.value.length === 0) return alert('請先建立一個帳戶');
+            transForm.value = {
+                type, amount: null, categoryName: '', categoryIcon: '',
+                accountId: accounts.value[0].id,
+                toAccountId: accounts.value[1]?.id || accounts.value[0].id
+            };
+            isTransModalOpen.value = true;
+        };
+
+        const selectCategory = (cat) => {
+            transForm.value.categoryName = cat.name;
+            transForm.value.categoryIcon = cat.icon;
+        };
+
+        const submitTransaction = () => {
+            if (!transForm.value.amount || transForm.value.amount <= 0) return;
+            if (transForm.value.type !== 'transfer' && !transForm.value.categoryName) return alert('請選擇類別');
+            const amt = transForm.value.amount;
+            const acc = accounts.value.find(a => a.id === transForm.value.accountId);
+            if (!acc) return alert('找不到帳戶');
+
+            if (transForm.value.type === 'expense') {
+                acc.balance -= amt;
+            } else if (transForm.value.type === 'income') {
+                acc.balance += amt;
+            } else {
+                if (transForm.value.accountId === transForm.value.toAccountId) return alert('轉出與轉入不可相同');
+                const toAcc = accounts.value.find(a => a.id === transForm.value.toAccountId);
+                if (!toAcc) return;
+                acc.balance -= amt;
+                toAcc.balance += amt;
+                transForm.value.categoryName = transForm.value.categoryName || '資金調度';
+                transForm.value.categoryIcon = 'fa-money-bill-transfer';
+            }
+            transactions.value.push({ id: Date.now(), date: new Date().toISOString(), ...transForm.value });
+            isTransModalOpen.value = false;
+        };
+
+        const openDataMgmt = () => {
+            if (confirm('確定要清除所有資料並重置？')) {
+                localStorage.removeItem('macaron_accounts_v3');
+                localStorage.removeItem('macaron_transactions_v3');
+                location.reload();
+            }
+        };
+
+        // Helpers
+        const getAccountName = (id) => accounts.value.find(a => a.id === id)?.name || '已刪除帳戶';
+        const getAccountColor = (id) => accounts.value.find(a => a.id === id)?.color || '#ccc';
+        const formatTime = (iso) => {
+            const d = new Date(iso);
+            return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+        };
+
+        const getTransStyle = (type) => {
+            if (type === 'expense') return { background: 'var(--blush)', color: 'var(--accent-rose)' };
+            if (type === 'income') return { background: 'var(--moss)', color: 'var(--accent-green)' };
+            return { background: 'var(--sand)', color: 'var(--accent-gold)' };
+        };
+
+        const getAmtColor = (type) => {
+            if (type === 'expense') return 'var(--accent-rose)';
+            if (type === 'income') return 'var(--accent-green)';
+            return 'var(--ink-muted)';
+        };
+
+        const getTypeIndicator = (type) => {
+            if (type === 'expense') return { background: 'var(--accent-rose)' };
+            if (type === 'income') return { background: 'var(--accent-green)' };
+            return { background: 'var(--ink-muted)' };
+        };
+
+        return {
+            accounts, transactions, totalNetWorth, sortedTransactions, currentCategories,
+            monthExpense, monthIncome, groupedTransactions,
+            macaronPalette, availableIcons,
+            isTransModalOpen, transForm, openTransModal, selectCategory, submitTransaction,
+            isAccountModalOpen, isEditingAccount, accountForm, openAccountModal, editAccount, submitAccount, deleteAccount,
+            openDataMgmt, getAccountName, getAccountColor, formatTime,
+            getTransStyle, getAmtColor, getTypeIndicator
+        };
+    }
+}).mount('#app');
+</script>
 </body>
 </html>
 
