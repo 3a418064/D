@@ -3,379 +3,743 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Macaron Finance</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <title>記帳本</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --cream: #FAF7F2;
-            --warm-white: #FFFEF9;
-            --ink: #1C1917;
-            --ink-soft: #44403C;
-            --ink-muted: #78716C;
-            --ink-faint: #D6D3D1;
-            --rose-dust: #E8D5D0;
-            --sage-dust: #D0E2D8;
-            --sky-dust: #CDD9E8;
-            --blush: #F2E4E1;
-            --moss: #E1EDE7;
-            --sand: #EDE6D3;
-            --accent-rose: #C0705A;
-            --accent-green: #5A8A6E;
-            --accent-gold: #9A7A3A;
-            --shadow-soft: 0 2px 20px rgba(28,25,23,0.06);
-            --radius-card: 20px;
+            --ink: #1a1a2e;
+            --ink-soft: #3d3d5c;
+            --paper: #f5f0e8;
+            --paper-warm: #ede8d8;
+            --paper-deep: #e0d8c8;
+            --gold: #c8973a;
+            --gold-light: #f0c060;
+            --red: #c0392b;
+            --red-soft: #e74c3c;
+            --green: #1a6b4a;
+            --green-soft: #27ae60;
+            --shadow: rgba(26,26,46,0.12);
+            --line: rgba(26,26,46,0.08);
         }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; -webkit-font-smoothing: antialiased; }
-        #app { max-width: 430px; margin: 0 auto; min-height: 100vh; background: var(--warm-white); position: relative; overflow: hidden; box-shadow: 0 0 80px rgba(28,25,23,0.12); }
-        #app::before { content: ''; position: fixed; inset: 0; max-width: 430px; margin: auto; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.025'/%3E%3C/svg%3E"); pointer-events: none; z-index: 1000; opacity: 0.4; }
-        ::-webkit-scrollbar { width: 0; height: 0; }
 
-        /* \u2500\u2500 Typography \u2500\u2500 */
-        .serif { font-family: 'DM Serif Display', serif; }
-        .mono { font-family: 'Space Mono', monospace; }
-        .section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 12px; }
+        body {
+            font-family: 'Noto Serif TC', serif;
+            background: var(--paper);
+            min-height: 100vh;
+            padding: 30px 20px;
+            display: flex;
+            justify-content: center;
+            position: relative;
+            overflow-x: hidden;
+        }
 
-        /* \u2500\u2500 Header decoration \u2500\u2500 */
-        .header-orb { position: absolute; border-radius: 50%; filter: blur(40px); pointer-events: none; }
+        /* Paper texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: 
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+        }
 
-        /* \u2500\u2500 Tabs \u2500\u2500 */
-        .tab-bar { display: flex; gap: 4px; background: var(--cream); border-radius: 14px; padding: 4px; }
-        .tab-btn { flex: 1; padding: 8px 4px; border: none; background: transparent; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; color: var(--ink-muted); cursor: pointer; transition: all 0.2s; letter-spacing: 0.02em; }
-        .tab-btn.active { background: var(--warm-white); color: var(--ink); box-shadow: 0 1px 8px rgba(28,25,23,0.08); }
+        /* Subtle horizontal rule lines like notebook */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: repeating-linear-gradient(
+                transparent,
+                transparent 39px,
+                rgba(180,160,120,0.12) 39px,
+                rgba(180,160,120,0.12) 40px
+            );
+            pointer-events: none;
+            z-index: 0;
+        }
 
-        /* \u2500\u2500 Account cards \u2500\u2500 */
-        .account-card { min-width: 148px; padding: 16px; border-radius: var(--radius-card); border: 1px solid rgba(28,25,23,0.06); background: var(--warm-white); transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer; flex-shrink: 0; box-shadow: var(--shadow-soft); position: relative; overflow: hidden; }
-        .account-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, transparent 60%); pointer-events: none; }
-        .account-card:active { transform: scale(0.97); }
-        .account-icon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; font-size: 18px; }
-        .balance-tag { font-family: 'Space Mono', monospace; font-size: 14px; color: var(--ink-soft); font-weight: 700; }
-        .add-card { min-width: 100px; padding: 16px 12px; border-radius: var(--radius-card); border: 1.5px dashed var(--ink-faint); background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--ink-muted); cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
-        .add-card:hover { border-color: var(--ink-muted); background: var(--cream); }
-        .net-worth-num { font-family: 'DM Serif Display', serif; font-size: 42px; color: var(--ink); letter-spacing: -1px; line-height: 1; }
-        .summary-bar { display: flex; gap: 12px; padding: 14px 16px; background: var(--cream); border-radius: 16px; margin-bottom: 20px; }
-        .summary-item { flex: 1; }
-        .summary-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 4px; }
-        .summary-value { font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700; }
+        .main-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 28px;
+            max-width: 1100px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
 
-        /* \u2500\u2500 Transaction list \u2500\u2500 */
-        .trans-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-radius: 16px; transition: background 0.15s; }
-        .trans-item:hover { background: var(--cream); }
-        .trans-icon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
-        .date-divider { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); padding: 8px 16px 4px; }
-        .date-tag { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--ink-muted); }
+        @media (max-width: 950px) {
+            .main-wrapper { grid-template-columns: 1fr; }
+        }
 
-        /* \u2500\u2500 CALENDAR \u2500\u2500 */
-        .cal-header { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; margin-bottom: 16px; }
-        .cal-nav-btn { width: 36px; height: 36px; border-radius: 12px; border: 1.5px solid var(--ink-faint); background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink-muted); transition: all 0.15s; font-size: 13px; }
-        .cal-nav-btn:hover { background: var(--cream); border-color: var(--ink-muted); color: var(--ink); }
-        .cal-month-title { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--ink); }
-        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
-        .cal-dow { text-align: center; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); padding: 6px 0 10px; }
-        .cal-dow.weekend { color: var(--accent-rose); opacity: 0.7; }
+        /* ──── Calendar Card ──── */
+        .calendar-card {
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 
+                4px 4px 0 var(--paper-deep),
+                8px 8px 0 rgba(180,160,120,0.25),
+                0 20px 60px rgba(26,26,46,0.1);
+            overflow: hidden;
+            border: 1px solid var(--paper-deep);
+        }
+
+        .cal-header {
+            background: var(--ink);
+            padding: 22px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+
+        .cal-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--gold), var(--gold-light), var(--gold));
+        }
+
+        #current-month {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.12em;
+        }
+
+        .nav-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.8);
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover { background: var(--gold); border-color: var(--gold); color: var(--ink); }
+
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+        }
+
+        .cal-day-header {
+            padding: 12px 8px;
+            background: var(--paper-warm);
+            text-align: center;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--ink-soft);
+            letter-spacing: 0.1em;
+            border-bottom: 2px solid var(--paper-deep);
+        }
+
+        .cal-day-header:first-child { color: var(--red); }
+        .cal-day-header:last-child { color: var(--ink-soft); }
 
         .cal-cell {
-            border-radius: 12px;
-            min-height: 72px;
-            padding: 5px 4px 4px;
+            min-height: 88px;
+            padding: 8px;
+            border: 0.5px solid var(--line);
             cursor: pointer;
-            transition: background 0.12s, box-shadow 0.12s;
+            background: #fff;
             position: relative;
+            transition: background 0.15s;
+        }
+
+        .cal-cell:hover { background: #fffdf7; }
+
+        .cal-cell.active {
+            background: #fffbf0 !important;
+            box-shadow: inset 0 0 0 2px var(--gold);
+            z-index: 1;
+        }
+
+        .cell-day-num {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--ink-soft);
+            line-height: 1;
+        }
+
+        .cal-cell:nth-child(7n+1) .cell-day-num { color: var(--red-soft); }
+
+        .cal-cell.today .cell-day-num {
+            background: var(--ink);
+            color: #fff;
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.78rem;
+        }
+
+        .cell-dots {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+            margin-top: 5px;
+        }
+
+        .cell-dot {
+            width: 5px; height: 5px;
+            border-radius: 50%;
+        }
+
+        .cell-summary {
+            position: absolute;
+            bottom: 6px; right: 8px;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        /* ──── Right Panel ──── */
+        .detail-card {
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 
+                4px 4px 0 var(--paper-deep),
+                8px 8px 0 rgba(180,160,120,0.25),
+                0 20px 60px rgba(26,26,46,0.1);
+            overflow: hidden;
+            border: 1px solid var(--paper-deep);
             display: flex;
             flex-direction: column;
-            align-items: center;
-            border: 1.5px solid transparent;
         }
-        .cal-cell:hover { background: var(--cream); }
-        .cal-cell.today { border-color: var(--ink-faint); background: var(--cream); }
-        .cal-cell.today .cal-day-num { background: var(--ink); color: var(--warm-white); }
-        .cal-cell.selected { background: var(--sand); border-color: var(--accent-gold); box-shadow: 0 2px 12px rgba(154,122,58,0.15); }
-        .cal-cell.other-month { opacity: 0.3; pointer-events: none; }
-        .cal-cell.has-data { }
 
-        .cal-day-num {
-            font-family: 'Space Mono', monospace;
-            font-size: 11px;
-            font-weight: 700;
-            width: 22px; height: 22px;
-            border-radius: 7px;
+        .panel-header {
+            background: var(--ink);
+            padding: 22px 24px;
+            position: relative;
+        }
+
+        .panel-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--gold), var(--gold-light), var(--gold));
+        }
+
+        #selected-date-display {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 0.1em;
+        }
+
+        .panel-body {
+            padding: 22px 22px 16px;
+            flex: 1;
+        }
+
+        /* Type Toggle */
+        .type-toggle {
+            display: flex;
+            background: var(--paper-warm);
+            border-radius: 6px;
+            padding: 4px;
+            margin-bottom: 18px;
+            border: 1px solid var(--paper-deep);
+        }
+
+        .type-btn {
+            flex: 1; border: none; padding: 10px;
+            border-radius: 4px; cursor: pointer;
+            font-family: 'Noto Serif TC', serif;
+            font-weight: 600; font-size: 0.9rem;
+            background: transparent; color: #999;
+            transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+
+        .type-btn.active.exp { background: var(--red); color: white; box-shadow: 0 2px 8px rgba(192,57,43,0.3); }
+        .type-btn.active.inc { background: var(--green); color: white; box-shadow: 0 2px 8px rgba(26,107,74,0.3); }
+
+        /* Form */
+        .form-group { margin-bottom: 14px; }
+
+        label {
+            font-size: 0.75rem;
+            color: var(--ink-soft);
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        input, select {
+            width: 100%; padding: 11px 14px;
+            border-radius: 4px;
+            border: 1px solid var(--paper-deep);
+            background: var(--paper);
+            font-family: 'Noto Serif TC', serif;
+            font-size: 0.95rem;
+            color: var(--ink);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(200,151,58,0.12);
+        }
+
+        input[type=number] { font-family: 'DM Mono', monospace; }
+
+        .btn-save {
+            background: var(--ink);
+            color: white; border: none;
+            padding: 13px; border-radius: 4px;
+            cursor: pointer; width: 100%;
+            font-family: 'Noto Serif TC', serif;
+            font-size: 0.95rem; font-weight: 600;
+            letter-spacing: 0.08em;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-save::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--gold), var(--gold-light));
+        }
+
+        .btn-save:hover { background: #2a2a4a; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(26,26,46,0.25); }
+
+        .btn-cancel {
+            display: none; width: 100%; border: none;
+            background: none; cursor: pointer;
+            color: #aaa; margin-top: 10px;
+            font-family: 'Noto Serif TC', serif;
+            font-size: 0.85rem;
+            padding: 8px;
+            transition: color 0.2s;
+        }
+        .btn-cancel:hover { color: var(--red); }
+
+        /* List */
+        .list-container {
+            margin-top: 20px;
+            border-top: 1px solid var(--paper-deep);
+            padding-top: 14px;
+            overflow-y: auto;
+            max-height: 260px;
+        }
+
+        .list-container::-webkit-scrollbar { width: 4px; }
+        .list-container::-webkit-scrollbar-track { background: var(--paper); }
+        .list-container::-webkit-scrollbar-thumb { background: var(--paper-deep); border-radius: 2px; }
+
+        .list-empty {
+            text-align: center;
+            color: #bbb;
+            font-size: 0.85rem;
+            padding: 20px 0;
+            letter-spacing: 0.05em;
+        }
+
+        .item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 11px 0;
+            border-bottom: 1px solid var(--line);
+            animation: fadeSlideIn 0.25s ease;
+        }
+
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .item-left { display: flex; align-items: center; gap: 12px; }
+
+        .item-icon {
+            width: 38px; height: 38px;
+            background: var(--paper-warm);
+            border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
+            font-size: 0.9rem;
             color: var(--ink-soft);
             flex-shrink: 0;
-            margin-bottom: 3px;
+            border: 1px solid var(--paper-deep);
         }
-        .cal-cell.weekend-cell .cal-day-num { color: var(--accent-rose); }
 
-        .cal-expense-bar {
-            font-family: 'Space Mono', monospace;
-            font-size: 8px;
-            font-weight: 700;
-            color: var(--accent-rose);
+        .item-cat {
+            font-size: 0.72rem;
+            color: #aaa;
+            letter-spacing: 0.06em;
+            margin-bottom: 2px;
+        }
+
+        .item-desc {
+            font-size: 0.9rem;
+            color: var(--ink);
+            font-weight: 600;
+        }
+
+        .item-right { display: flex; align-items: center; gap: 6px; }
+
+        .item-amount {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .item-actions { display: flex; }
+
+        .item-actions button {
+            background: none; border: none;
+            cursor: pointer; color: #ccc;
+            width: 28px; height: 28px;
+            border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem;
+            transition: all 0.15s;
+        }
+
+        .item-actions button:hover { background: var(--paper-warm); }
+        .item-actions .btn-edit:hover { color: var(--gold); }
+        .item-actions .btn-del:hover { color: var(--red); }
+
+        /* Monthly summary bar */
+        .summary-bar {
+            background: var(--paper-warm);
+            border-top: 1px solid var(--paper-deep);
+            padding: 14px 22px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .summary-item { text-align: center; }
+        .summary-label { font-size: 0.7rem; color: #aaa; letter-spacing: 0.08em; margin-bottom: 3px; }
+        .summary-val {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        /* Stamp decoration */
+        .stamp {
+            position: absolute;
+            top: 16px; right: 20px;
+            width: 42px; height: 42px;
+            border: 2px solid rgba(200,151,58,0.4);
+            border-radius: 3px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.55rem;
+            color: rgba(200,151,58,0.5);
+            letter-spacing: 0.05em;
             text-align: center;
             line-height: 1.3;
-            width: 100%;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-weight: 600;
+            transform: rotate(4deg);
         }
-        .cal-income-bar {
-            font-family: 'Space Mono', monospace;
-            font-size: 8px;
-            font-weight: 700;
-            color: var(--accent-green);
-            text-align: center;
-            line-height: 1.3;
-            width: 100%;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .cal-dot-row { display: flex; gap: 2px; justify-content: center; margin-top: 2px; flex-wrap: wrap; }
-        .cal-dot { width: 4px; height: 4px; border-radius: 50%; flex-shrink: 0; }
-
-        /* Day detail panel */
-        .day-detail-panel {
-            background: var(--cream);
-            border-radius: 20px;
-            padding: 16px;
-            margin-top: 16px;
-        }
-        .day-detail-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-        .day-detail-title { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--ink); }
-        .day-detail-empty { text-align: center; padding: 20px; color: var(--ink-muted); font-size: 13px; }
-
-        .day-trans-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 12px; background: var(--warm-white); margin-bottom: 6px; box-shadow: 0 1px 4px rgba(28,25,23,0.04); }
-        .day-trans-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
-
-        /* Cal month total bar */
-        .cal-month-totals { display: flex; gap: 8px; margin-bottom: 16px; }
-        .cal-total-pill { flex: 1; padding: 10px 14px; border-radius: 12px; display: flex; flex-direction: column; gap: 2px; }
-
-        /* \u2500\u2500 Bottom nav \u2500\u2500 */
-        .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; background: rgba(255,254,249,0.92); backdrop-filter: blur(20px) saturate(180%); border-top: 1px solid rgba(28,25,23,0.06); padding: 12px 32px 24px; z-index: 40; display: flex; justify-content: space-around; align-items: flex-end; }
-        .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; transition: transform 0.15s; background: none; border: none; -webkit-tap-highlight-color: transparent; }
-        .nav-btn:active { transform: scale(0.92); }
-        .nav-icon-wrap { width: 48px; height: 48px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 17px; transition: all 0.2s; }
-        .nav-btn.center .nav-icon-wrap { width: 56px; height: 56px; border-radius: 20px; margin-bottom: 2px; box-shadow: 0 8px 24px rgba(28,25,23,0.2); }
-
-        /* \u2500\u2500 Modals \u2500\u2500 */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(28,25,23,0.4); backdrop-filter: blur(4px); z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
-        .modal-sheet { background: var(--warm-white); width: 100%; max-width: 430px; border-radius: 28px 28px 0 0; padding: 28px 24px; box-shadow: 0 -20px 60px rgba(28,25,23,0.15); max-height: 92vh; overflow-y: auto; }
-        .modal-handle { width: 36px; height: 4px; background: var(--ink-faint); border-radius: 2px; margin: 0 auto 24px; }
-
-        /* \u2500\u2500 Form \u2500\u2500 */
-        .field { width: 100%; background: var(--cream); border: 1px solid transparent; border-radius: 14px; padding: 14px 18px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; color: var(--ink); transition: border-color 0.2s; outline: none; }
-        .field:focus { border-color: var(--ink-muted); background: var(--warm-white); }
-        .field::placeholder { color: var(--ink-faint); }
-        .amount-input { width: 100%; background: transparent; border: none; font-family: 'DM Serif Display', serif; font-size: 52px; color: var(--ink); outline: none; padding: 0; }
-        .amount-input::placeholder { color: var(--ink-faint); }
-        .select-field { width: 100%; background: transparent; border: none; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; color: var(--ink); outline: none; cursor: pointer; }
-
-        /* \u2500\u2500 Buttons \u2500\u2500 */
-        .btn-primary { width: 100%; height: 56px; background: var(--ink); color: var(--warm-white); border: none; border-radius: 16px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; letter-spacing: 0.02em; cursor: pointer; transition: opacity 0.15s, transform 0.15s; }
-        .btn-primary:hover { opacity: 0.88; }
-        .btn-primary:active { transform: scale(0.98); }
-        .btn-danger { background: var(--blush); color: var(--accent-rose); border: none; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
-        .btn-danger:hover { opacity: 0.8; }
-
-        /* \u2500\u2500 Category picker \u2500\u2500 */
-        .cat-btn { padding: 10px 8px; border-radius: 14px; border: 1.5px solid var(--ink-faint); background: transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
-        .cat-btn:hover { background: var(--cream); }
-        .cat-btn.active-expense { background: var(--blush); border-color: var(--accent-rose); color: var(--accent-rose); }
-        .cat-btn.active-income { background: var(--moss); border-color: var(--accent-green); color: var(--accent-green); }
-
-        /* \u2500\u2500 Color / Icon pickers \u2500\u2500 */
-        .color-dot { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.15s, box-shadow 0.15s; }
-        .color-dot:hover { transform: scale(1.1); }
-        .color-dot.active { box-shadow: 0 0 0 2px var(--warm-white), 0 0 0 4px var(--ink); transform: scale(1.1); }
-        .icon-pick { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; border: 1.5px solid var(--ink-faint); background: transparent; font-size: 18px; color: var(--ink-muted); cursor: pointer; transition: all 0.15s; }
-        .icon-pick.active { background: var(--sand); border-color: var(--ink-soft); color: var(--ink); }
-        .acc-preview { width: 88px; height: 88px; border-radius: 28px; display: flex; align-items: center; justify-content: center; font-size: 36px; color: white; transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); box-shadow: 0 8px 30px rgba(0,0,0,0.15); margin: 0 auto 24px; }
-
-        /* \u2500\u2500 Animations \u2500\u2500 */
-        .slide-enter-active { animation: slideUp 0.35s cubic-bezier(0.32,0.72,0,1); }
-        .slide-leave-active { animation: slideDown 0.25s cubic-bezier(0.32,0.72,0,1); }
-        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes slideDown { from { transform: translateY(0); opacity: 1; } to { transform: translateY(100%); opacity: 0; } }
-        .fade-enter-active { animation: fadeIn 0.2s ease; }
-        .fade-leave-active { animation: fadeOut 0.2s ease; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
     </style>
 </head>
 <body>
-<div id="app">
 
-    <!-- \u2500\u2500\u2500 HEADER \u2500\u2500\u2500 -->
-    <header style="background:var(--cream);padding:48px 24px 20px;position:relative;overflow:hidden;">
-        <div class="header-orb" style="width:200px;height:200px;background:var(--rose-dust);top:-60px;right:-40px;opacity:0.7;"></div>
-        <div class="header-orb" style="width:120px;height:120px;background:var(--sky-dust);top:20px;left:-30px;opacity:0.5;"></div>
-        <div style="position:relative;z-index:1;">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
-                <p class="section-label" style="margin-bottom:0;">\u7e3d\u8cc7\u7522\u6de8\u503c</p>
-                <button @click="openDataMgmt" style="background:none;border:1px solid var(--ink-faint);cursor:pointer;font-size:11px;font-weight:600;letter-spacing:0.05em;color:var(--ink-muted);font-family:'DM Sans',sans-serif;padding:4px 10px;border-radius:8px;transition:all 0.15s;">\u91cd\u7f6e\u8cc7\u6599</button>
-            </div>
-            <div class="net-worth-num">
-                <span style="font-size:28px;opacity:0.4;vertical-align:top;line-height:1.5;font-family:'DM Sans',sans-serif;font-weight:300;">$</span>{{ totalNetWorth.toLocaleString() }}
-            </div>
-            <div class="summary-bar" style="margin-top:18px;">
-                <div class="summary-item">
-                    <div class="summary-label">\u672c\u6708\u652f\u51fa</div>
-                    <div class="summary-value" style="color:var(--accent-rose);">\u2212{{ monthExpense.toLocaleString() }}</div>
-                </div>
-                <div style="width:1px;background:var(--ink-faint);"></div>
-                <div class="summary-item" style="padding-left:12px;">
-                    <div class="summary-label">\u672c\u6708\u6536\u5165</div>
-                    <div class="summary-value" style="color:var(--accent-green);">+{{ monthIncome.toLocaleString() }}</div>
-                </div>
-            </div>
-            <!-- Account cards -->
-            <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:4px;margin:-4px 0 0;">
-                <div v-for="acc in accounts" :key="acc.id" class="account-card" @click="editAccount(acc)">
-                    <div class="account-icon" :style="{ background: acc.color + '44', color: acc.color }">
-                        <i :class="['fa-solid', acc.icon]"></i>
-                    </div>
-                    <div style="font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:116px;">{{ acc.name }}</div>
-                    <div class="balance-tag">$ {{ acc.balance.toLocaleString() }}</div>
-                    <div style="position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 20px 20px;" :style="{ background: acc.color }"></div>
-                </div>
-                <button @click="openAccountModal(null)" class="add-card">
-                    <i class="fa-solid fa-plus" style="font-size:18px;"></i>
-                    <span style="font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;">\u65b0\u589e</span>
-                </button>
-            </div>
+<div class="main-wrapper">
+    <!-- ── 月曆 ── -->
+    <div class="calendar-card">
+        <div class="cal-header">
+            <button class="nav-btn" onclick="changeMonth(-1)">&#10094;</button>
+            <h2 id="current-month">2026年 4月</h2>
+            <button class="nav-btn" onclick="changeMonth(1)">&#10095;</button>
         </div>
-    </header>
-
-    <!-- \u2500\u2500\u2500 TAB BAR \u2500\u2500\u2500 -->
-    <div style="padding:16px 20px 0;">
-        <div class="tab-bar">
-            <button class="tab-btn" :class="{ active: activeTab === 'list' }" @click="activeTab = 'list'">
-                <i class="fa-solid fa-list-ul" style="margin-right:5px;"></i>\u660e\u7d30
-            </button>
-            <button class="tab-btn" :class="{ active: activeTab === 'calendar' }" @click="activeTab = 'calendar'">
-                <i class="fa-solid fa-calendar-days" style="margin-right:5px;"></i>\u6708\u884c\u4e8b\u66c6
-            </button>
-        </div>
+        <div id="calendar" class="cal-grid"></div>
     </div>
 
-    <!-- \u2500\u2500\u2500 LIST VIEW \u2500\u2500\u2500 -->
-    <main v-if="activeTab === 'list'" style="padding:20px 20px 120px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <h2 style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--ink);">\u8fd1\u671f\u7d00\u9304</h2>
-            <span style="font-size:11px;font-weight:600;color:var(--ink-muted);letter-spacing:0.05em;">\u5171 {{ transactions.length }} \u7b46</span>
+    <!-- ── 右側面板 ── -->
+    <div class="detail-card">
+        <div class="panel-header">
+            <div class="stamp">記帳<br>本</div>
+            <div id="selected-date-display">請選擇日期</div>
         </div>
-        <div v-if="transactions.length === 0" style="text-align:center;padding:60px 20px;background:var(--cream);border-radius:20px;">
-            <div style="font-size:48px;margin-bottom:12px;opacity:0.2;">\u20bf</div>
-            <p style="font-size:14px;color:var(--ink-muted);font-weight:500;">\u9084\u6c92\u6709\u4efb\u4f55\u4ea4\u6613\u7d00\u9304</p>
-            <p style="font-size:12px;color:var(--ink-faint);margin-top:4px;">\u9ede\u4e0b\u65b9\u6309\u9215\u958b\u59cb\u8a18\u5e33\u5427</p>
+
+        <div class="panel-body">
+            <div class="type-toggle">
+                <button id="btn-exp" class="type-btn active exp" onclick="handleTypeChange('exp')">
+                    <i class="fa-solid fa-arrow-up-from-bracket"></i> 支出
+                </button>
+                <button id="btn-inc" class="type-btn inc" onclick="handleTypeChange('inc')">
+                    <i class="fa-solid fa-arrow-down-to-bracket"></i> 收入
+                </button>
+            </div>
+
+            <input type="hidden" id="edit-id">
+
+            <div class="form-group">
+                <label>類別</label>
+                <select id="category"></select>
+            </div>
+            <div class="form-group">
+                <label>備註</label>
+                <input type="text" id="desc" placeholder="例如：麥當勞、計程車…">
+            </div>
+            <div class="form-group">
+                <label>金額</label>
+                <input type="number" id="amount" placeholder="0">
+            </div>
+            <button class="btn-save" id="save-btn" onclick="saveRecord()">儲存紀錄</button>
+            <button id="cancel-btn" class="btn-cancel" onclick="resetForm()">取消編輯</button>
+
+            <div class="list-container" id="daily-list"></div>
         </div>
-        <div v-for="(group, date) in groupedTransactions" :key="date">
-            <div class="date-divider">{{ date }}</div>
-            <div v-for="t in group" :key="t.id" class="trans-item">
-                <div style="display:flex;align-items:center;gap:14px;">
-                    <div class="trans-icon" :style="getTransStyle(t.type)">
-                        <i :class="['fa-solid', t.categoryIcon]"></i>
-                    </div>
+
+        <div class="summary-bar">
+            <div class="summary-item">
+                <div class="summary-label">當日支出</div>
+                <div class="summary-val" id="sum-exp" style="color:var(--red-soft)">-0</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">當日收入</div>
+                <div class="summary-val" id="sum-inc" style="color:var(--green-soft)">+0</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">結餘</div>
+                <div class="summary-val" id="sum-net">0</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const categories = {
+        exp: [
+            { id: 'food',      name: '餐飲',   icon: 'fa-utensils' },
+            { id: 'transport', name: '交通',   icon: 'fa-bus' },
+            { id: 'shopping',  name: '購物',   icon: 'fa-bag-shopping' },
+            { id: 'home',      name: '居家',   icon: 'fa-house' },
+            { id: 'fun',       name: '娛樂',   icon: 'fa-gamepad' },
+            { id: 'health',    name: '醫療',   icon: 'fa-heart-pulse' },
+            { id: 'other_exp', name: '其他支出', icon: 'fa-ellipsis' }
+        ],
+        inc: [
+            { id: 'salary',   name: '薪水',   icon: 'fa-money-bill-wave' },
+            { id: 'bonus',    name: '獎金',   icon: 'fa-gift' },
+            { id: 'invest',   name: '投資',   icon: 'fa-chart-line' },
+            { id: 'other_inc',name: '其他收入', icon: 'fa-wallet' }
+        ]
+    };
+
+    const today = new Date();
+    let currentViewDate = new Date();
+    let selectedDateStr = today.toISOString().split('T')[0];
+    let currentType = 'exp';
+    let db = JSON.parse(localStorage.getItem('cal_finance_v4')) || {};
+
+    function init() {
+        updateCategoryOptions();
+        renderCalendar();
+        selectDate(selectedDateStr);
+    }
+
+    function handleTypeChange(type) {
+        currentType = type;
+        document.getElementById('btn-exp').classList.toggle('active', type === 'exp');
+        document.getElementById('btn-inc').classList.toggle('active', type === 'inc');
+        updateCategoryOptions();
+    }
+
+    function updateCategoryOptions() {
+        const select = document.getElementById('category');
+        select.innerHTML = categories[currentType].map(cat =>
+            `<option value="${cat.id}">${cat.name}</option>`
+        ).join('');
+    }
+
+    function renderCalendar() {
+        const year  = currentViewDate.getFullYear();
+        const month = currentViewDate.getMonth();
+        document.getElementById('current-month').innerText = `${year}年 ${month + 1}月`;
+
+        const firstDay    = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const container   = document.getElementById('calendar');
+        container.innerHTML = '';
+
+        ['日','一','二','三','四','五','六'].forEach(d => {
+            const div = document.createElement('div');
+            div.className = 'cal-day-header';
+            div.innerText = d;
+            container.appendChild(div);
+        });
+
+        for (let i = 0; i < firstDay; i++) {
+            const blank = document.createElement('div');
+            blank.className = 'cal-cell';
+            blank.style.background = '#fafaf8';
+            container.appendChild(blank);
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            const cell    = document.createElement('div');
+            cell.className = 'cal-cell';
+            if (dateStr === selectedDateStr) cell.classList.add('active');
+
+            const isToday = (year === today.getFullYear() && month === today.getMonth() && day === today.getDate());
+            if (isToday) cell.classList.add('today');
+
+            const dayRecords = db[dateStr] || [];
+            const totalExp   = dayRecords.filter(r => r.amount < 0).reduce((a, r) => a + r.amount, 0);
+            const totalInc   = dayRecords.filter(r => r.amount > 0).reduce((a, r) => a + r.amount, 0);
+            const net        = totalExp + totalInc;
+
+            // dots
+            let dotsHTML = '';
+            if (dayRecords.length > 0) {
+                const dots = dayRecords.slice(0, 4).map(r =>
+                    `<div class="cell-dot" style="background:${r.amount < 0 ? 'var(--red-soft)' : 'var(--green-soft)'}"></div>`
+                ).join('');
+                dotsHTML = `<div class="cell-dots">${dots}</div>`;
+            }
+
+            let sumHTML = '';
+            if (net !== 0) {
+                const color = net > 0 ? 'var(--green-soft)' : 'var(--red-soft)';
+                sumHTML = `<div class="cell-summary" style="color:${color}">${net > 0 ? '+' : ''}${net.toLocaleString()}</div>`;
+            }
+
+            const dayNumClass = isToday ? 'cell-day-num' : 'cell-day-num';
+            cell.innerHTML = `<div class="${dayNumClass}">${day}</div>${dotsHTML}${sumHTML}`;
+            cell.onclick = () => selectDate(dateStr);
+            container.appendChild(cell);
+        }
+    }
+
+    function selectDate(dateStr) {
+        selectedDateStr = dateStr;
+        // Format display
+        const [y, m, d] = dateStr.split('-');
+        document.getElementById('selected-date-display').innerText = `${y} 年 ${parseInt(m)} 月 ${parseInt(d)} 日`;
+        resetForm();
+        renderDailyList();
+        updateSummary();
+        renderCalendar();
+    }
+
+    function updateSummary() {
+        const records = db[selectedDateStr] || [];
+        const exp = records.filter(r => r.amount < 0).reduce((a, r) => a + r.amount, 0);
+        const inc = records.filter(r => r.amount > 0).reduce((a, r) => a + r.amount, 0);
+        const net = exp + inc;
+        document.getElementById('sum-exp').innerText = exp.toLocaleString();
+        document.getElementById('sum-inc').innerText = `+${inc.toLocaleString()}`;
+        const netEl = document.getElementById('sum-net');
+        netEl.innerText = (net >= 0 ? '+' : '') + net.toLocaleString();
+        netEl.style.color = net >= 0 ? 'var(--green-soft)' : 'var(--red-soft)';
+    }
+
+    function renderDailyList() {
+        const listContainer = document.getElementById('daily-list');
+        listContainer.innerHTML = '';
+        const records = db[selectedDateStr] || [];
+
+        if (records.length === 0) {
+            listContainer.innerHTML = '<div class="list-empty">今日尚無記錄</div>';
+            return;
+        }
+
+        records.forEach(r => {
+            const allCats = [...categories.exp, ...categories.inc];
+            const catInfo = allCats.find(c => c.id === r.catId) || { icon: 'fa-question', name: '未知' };
+            const color   = r.amount > 0 ? 'var(--green-soft)' : 'var(--red-soft)';
+            const amtStr  = (r.amount > 0 ? '+' : '') + r.amount.toLocaleString();
+
+            const div = document.createElement('div');
+            div.className = 'item';
+            div.innerHTML = `
+                <div class="item-left">
+                    <div class="item-icon"><i class="fa-solid ${catInfo.icon}"></i></div>
                     <div>
-                        <div style="font-size:15px;font-weight:600;color:var(--ink);">{{ t.categoryName }}</div>
-                        <div style="display:flex;align-items:center;gap:6px;margin-top:3px;">
-                            <span style="width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0;" :style="{ background: getAccountColor(t.accountId) }"></span>
-                            <span style="font-size:11px;color:var(--ink-muted);font-weight:500;">{{ getAccountName(t.accountId) }}</span>
-                            <template v-if="t.type === 'transfer'">
-                                <i class="fa-solid fa-arrow-right" style="font-size:9px;color:var(--ink-faint);"></i>
-                                <span style="width:6px;height:6px;border-radius:50%;display:inline-block;" :style="{ background: getAccountColor(t.toAccountId) }"></span>
-                                <span style="font-size:11px;color:var(--ink-muted);font-weight:500;">{{ getAccountName(t.toAccountId) }}</span>
-                            </template>
-                        </div>
+                        <div class="item-cat">${catInfo.name}</div>
+                        <div class="item-desc">${r.desc}</div>
                     </div>
                 </div>
-                <div style="text-align:right;">
-                    <div style="font-family:'Space Mono',monospace;font-size:15px;font-weight:700;" :style="{ color: getAmtColor(t.type) }">
-                        {{ t.type === 'expense' ? '\u2212' : (t.type === 'income' ? '+' : '') }}{{ t.amount.toLocaleString() }}
+                <div class="item-right">
+                    <span class="item-amount" style="color:${color}">${amtStr}</span>
+                    <div class="item-actions">
+                        <button class="btn-edit" onclick="editRecord('${r.id}')"><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn-del"  onclick="deleteRecord('${r.id}')"><i class="fa-solid fa-trash"></i></button>
                     </div>
-                    <div class="date-tag">{{ formatTime(t.date) }}</div>
                 </div>
-            </div>
-        </div>
-    </main>
+            `;
+            listContainer.appendChild(div);
+        });
+    }
 
-    <!-- \u2500\u2500\u2500 CALENDAR VIEW \u2500\u2500\u2500 -->
-    <main v-if="activeTab === 'calendar'" style="padding:20px 16px 120px;">
+    function saveRecord() {
+        const catId  = document.getElementById('category').value;
+        const desc   = document.getElementById('desc').value.trim() || document.querySelector(`#category option[value="${catId}"]`).text;
+        let   amount = Math.abs(parseFloat(document.getElementById('amount').value));
+        const editId = document.getElementById('edit-id').value;
+        if (!amount) return alert('請輸入金額');
+        amount = currentType === 'exp' ? -amount : amount;
 
-        <!-- Month navigator -->
-        <div class="cal-header">
-            <button class="cal-nav-btn" @click="prevMonth"><i class="fa-solid fa-chevron-left"></i></button>
-            <div style="text-align:center;">
-                <div class="cal-month-title">{{ calMonthTitle }}</div>
-                <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-muted);margin-top:2px;">{{ calYear }}</div>
-            </div>
-            <button class="cal-nav-btn" @click="nextMonth"><i class="fa-solid fa-chevron-right"></i></button>
-        </div>
+        if (!db[selectedDateStr]) db[selectedDateStr] = [];
 
-        <!-- Month totals pills -->
-        <div class="cal-month-totals">
-            <div class="cal-total-pill" style="background:var(--blush);">
-                <div style="font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent-rose);">\u672c\u6708\u652f\u51fa</div>
-                <div style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--accent-rose);">\u2212{{ calMonthExpense.toLocaleString() }}</div>
-            </div>
-            <div class="cal-total-pill" style="background:var(--moss);">
-                <div style="font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent-green);">\u672c\u6708\u6536\u5165</div>
-                <div style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--accent-green);">+{{ calMonthIncome.toLocaleString() }}</div>
-            </div>
-            <div class="cal-total-pill" style="background:var(--sand);">
-                <div style="font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent-gold);">\u6de8\u6536\u652f</div>
-                <div style="font-family:'Space Mono',monospace;font-size:14px;font-weight:700;" :style="{ color: calMonthIncome - calMonthExpense >= 0 ? 'var(--accent-green)' : 'var(--accent-rose)' }">
-                    {{ calMonthIncome - calMonthExpense >= 0 ? '+' : '\u2212' }}{{ Math.abs(calMonthIncome - calMonthExpense).toLocaleString() }}
-                </div>
-            </div>
-        </div>
+        if (editId) {
+            const idx = db[selectedDateStr].findIndex(r => r.id == editId);
+            db[selectedDateStr][idx] = { id: editId, catId, desc, amount };
+        } else {
+            db[selectedDateStr].push({ id: Date.now().toString(), catId, desc, amount });
+        }
 
-        <!-- Day-of-week headers: Mon\u2013Sun -->
-        <div class="cal-grid" style="margin-bottom:2px;">
-            <div v-for="dow in ['\u4e00','\u4e8c','\u4e09','\u56db','\u4e94','\u516d','\u65e5']" :key="dow"
-                 class="cal-dow" :class="{ weekend: dow === '\u516d' || dow === '\u65e5' }">{{ dow }}</div>
-        </div>
+        localStorage.setItem('cal_finance_v4', JSON.stringify(db));
+        selectDate(selectedDateStr);
+    }
 
-        <!-- Calendar cells -->
-        <div class="cal-grid">
-            <div v-for="cell in calCells" :key="cell.key"
-                 class="cal-cell"
-                 :class="{
-                     'today': cell.isToday,
-                     'selected': selectedDay && selectedDay === cell.dateStr,
-                     'other-month': !cell.inMonth,
-                     'weekend-cell': cell.isWeekend,
-                     'has-data': cell.expense > 0 || cell.income > 0
-                 }"
-                 @click="cell.inMonth && selectDay(cell)">
+    function deleteRecord(id) {
+        if (!confirm('確定要刪除嗎？')) return;
+        db[selectedDateStr] = db[selectedDateStr].filter(r => r.id != id);
+        localStorage.setItem('cal_finance_v4', JSON.stringify(db));
+        selectDate(selectedDateStr);
+    }
 
-                <div class="cal-day-num">{{ cell.day }}</div>
+    function editRecord(id) {
+        const record = db[selectedDateStr].find(r => r.id == id);
+        handleTypeChange(record.amount > 0 ? 'inc' : 'exp');
+        setTimeout(() => {
+            document.getElementById('category').value = record.catId;
+        }, 10);
+        document.getElementById('desc').value   = record.desc;
+        document.getElementById('amount').value = Math.abs(record.amount);
+        document.getElementById('edit-id').value = record.id;
+        document.getElementById('save-btn').innerText = '更新紀錄';
+        document.getElementById('cancel-btn').style.display = 'block';
+    }
 
-                <!-- Expense on top -->
-                <div v-if="cell.expense > 0" class="cal-expense-bar">
-                    {{ formatCalAmt(cell.expense) }}
-                </div>
+    function resetForm() {
+        document.getElementById('edit-id').value  = '';
+        document.getElementById('desc').value     = '';
+        document.getElementById('amount').value   = '';
+        document.getElementById('save-btn').innerText = '儲存紀錄';
+        document.getElementById('cancel-btn').style.display = 'none';
+        handleTypeChange('exp');
+    }
 
-                <!-- Income below -->
-                <div v-if="cell.income > 0" class="cal-income-bar">
-                    {{ formatCalAmt(cell.income) }}
-                </div>
+    function changeMonth(step) {
+        currentViewDate.setMonth(currentViewDate.getMonth() + step);
+        renderCalendar();
+    }
 
-                <!-- dot indicators when both 0 but has transfer -->
-                <div v-if="cell.expense === 0 && cell.income === 0 && cell.hasTransfer" class="cal-dot-row">
-                    <div class="cal-dot" style="background:var(--accent-gold);"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Selected day detail panel -->
-        <div v-if="selectedDay" class="day-detail-panel">
-            <div class="day-detail-header">
-                <div class="day-detail-title">{{ selectedDayLabel }}</div>
-                <div style="display:flex;gap:8px;align-items:center;">
-                    <!-- Add trans for this day shortcut -->
-                    <button @
+    init();
+</script>
+</body>
+</html>
