@@ -23,6 +23,12 @@
     body {
       font-family: 'Miao', sans-serif !important;
     }
+
+    /* 確保截圖時字體更清晰 */
+    #capture-area {
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
   </style>
 </head>
 <body class="bg-slate-50 font-sans text-black min-h-screen p-2 md:p-6">
@@ -66,7 +72,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="m5 10 7-7 7 7"/><path d="m5 14 7 7 7-7"/></svg>
                 表格班別字體大小: 
             </div>
-            <input type="range" id="font-size-slider" min="12" max="36" value="20" class="w-full max-w-xs accent-indigo-600" oninput="updateFontSize(this.value)">
+            <input type="range" id="font-size-slider" min="12" max="40" value="20" class="w-full max-w-xs accent-indigo-600" oninput="updateFontSize(this.value)">
             <span id="font-size-display" class="font-mono bg-slate-100 px-2 py-1 rounded text-sm text-slate-600 w-12 text-center">20px</span>
         </div>
       </div>
@@ -82,7 +88,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           </button>
           
-          <h2 id="month-title" class="text-2xl md:text-3xl font-bold tracking-wider text-center">
+          <h2 id="month-title" class="text-2xl md:text-3xl font-bold tracking-wider text-center pt-2">
             <!-- 標題由 JS 產生 -->
           </h2>
           
@@ -101,13 +107,13 @@
       <div class="p-4 bg-white">
         <!-- 星期標題 (滿版置中) -->
         <div class="grid grid-cols-7 gap-1 md:gap-2 mb-2">
-          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full">一</div>
-          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full">二</div>
-          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full">三</div>
-          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full">四</div>
-          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full">五</div>
-          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full">六</div>
-          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full">日</div>
+          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full pt-4">一</div>
+          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full pt-4">二</div>
+          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full pt-4">三</div>
+          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full pt-4">四</div>
+          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full pt-4">五</div>
+          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full pt-4">六</div>
+          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full pt-4">日</div>
         </div>
         
         <!-- 日曆格子 -->
@@ -156,7 +162,7 @@
         
         return `<button 
                   onclick="setActiveTool('${person}', '${shift}')" 
-                  class="px-4 py-2 rounded-lg font-medium transition-all duration-200 border-2 text-black ${SHIFT_COLORS[shift]} ${activeClass} ${clearClass}">
+                  class="px-4 py-2 rounded-lg font-medium transition-all duration-200 border-2 text-black pt-3 ${SHIFT_COLORS[shift]} ${activeClass} ${clearClass}">
                   ${isClear ? '🧹 ' : ''}${shift}
                 </button>`;
       };
@@ -180,34 +186,40 @@
       
       // 填補月初的空白
       for (let i = 0; i < offset; i++) {
-        html += `<div class="bg-transparent rounded-lg min-h-[120px] md:min-h-[140px]"></div>`;
+        html += `<div class="bg-transparent rounded-lg min-h-[130px] md:min-h-[150px]"></div>`;
       }
 
       // 產生日期
       const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
       
+      // 專門為解決 html2canvas 自訂字型跑位設計的 HTML 結構
+      const createShiftBlock = (name, shiftName) => {
+        if (!shiftName) return '';
+        return `
+          <div class="flex-1 w-full rounded border border-black/10 relative overflow-hidden ${SHIFT_COLORS[shiftName]}">
+            <div style="font-size: ${currentFontSize}px; line-height: 1;" class="absolute inset-0 flex items-center justify-center font-bold text-black pt-1">
+              <span>${name}${shiftName}</span>
+            </div>
+          </div>
+        `;
+      };
+
       for (let d = 1; d <= lastDayOfMonth.getDate(); d++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const isToday = todayStr === dateStr;
         const dayData = schedule[dateStr] || {};
 
-        let cellClasses = `min-h-[120px] md:min-h-[140px] p-1 md:p-2 border rounded-lg flex flex-col cursor-pointer transition-all bg-white hover:ring-2 hover:ring-blue-400 `;
+        let cellClasses = `min-h-[130px] md:min-h-[150px] p-1 md:p-2 border rounded-lg flex flex-col cursor-pointer transition-all bg-white hover:ring-2 hover:ring-blue-400 `;
         cellClasses += isToday ? 'border-blue-400 bg-blue-50/10' : 'border-slate-300';
 
         let shiftsHtml = '';
-        if (dayData.xuan) {
-          // 套用動態字體大小樣式，並設定滿版置中
-          shiftsHtml += `<div style="font-size: ${currentFontSize}px;" class="flex-1 flex items-center justify-center w-full rounded font-bold text-black border border-black/10 ${SHIFT_COLORS[dayData.xuan]}">軒${dayData.xuan}</div>`;
-        }
-        if (dayData.en) {
-          // 套用動態字體大小樣式，並設定滿版置中
-          shiftsHtml += `<div style="font-size: ${currentFontSize}px;" class="flex-1 flex items-center justify-center w-full rounded font-bold text-black border border-black/10 ${SHIFT_COLORS[dayData.en]}">恩${dayData.en}</div>`;
-        }
+        if (dayData.xuan) shiftsHtml += createShiftBlock('軒', dayData.xuan);
+        if (dayData.en) shiftsHtml += createShiftBlock('恩', dayData.en);
 
         html += `
           <div class="${cellClasses}" onclick="handleDayClick('${dateStr}')">
             <div class="text-right text-sm md:text-base font-bold mb-1 ${isToday ? 'text-blue-600' : 'text-slate-600'}">${d}</div>
-            <div class="flex flex-col flex-1 gap-1">${shiftsHtml}</div>
+            <div class="flex flex-col flex-1 gap-1 min-h-0">${shiftsHtml}</div>
           </div>
         `;
       }
@@ -239,9 +251,7 @@
         schedule[dateStr][activeTool.person] = activeTool.shift;
       }
 
-      // 儲存到 localStorage
       localStorage.setItem('monthlyScheduleApp', JSON.stringify(schedule));
-      // 重新渲染日曆更新畫面
       renderCalendar();
     };
     
@@ -249,8 +259,8 @@
     window.updateFontSize = function(val) {
         currentFontSize = val;
         document.getElementById('font-size-display').innerText = val + 'px';
-        localStorage.setItem('shiftFontSize', val); // 記憶設定
-        renderCalendar(); // 立即重新繪製日曆套用新字體
+        localStorage.setItem('shiftFontSize', val);
+        renderCalendar();
     }
 
     // --- 下載圖片功能 ---
@@ -263,11 +273,17 @@
       btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
 
       try {
+        // 確保自訂字型完全載入後再進行截圖
+        if (document.fonts && document.fonts.ready) {
+            await document.fonts.ready;
+        }
+
         const captureArea = document.getElementById('capture-area');
         const canvas = await html2canvas(captureArea, {
-          scale: 2, // 提高圖片解析度
+          scale: 2.5, // 稍微提高解析度讓字型渲染更完美
           backgroundColor: "#ffffff",
-          logging: false
+          logging: false,
+          useCORS: true
         });
         
         const image = canvas.toDataURL("image/png");
@@ -288,7 +304,6 @@
     };
 
     // --- 初始化執行 ---
-    // 設定滑桿初始值
     document.getElementById('font-size-slider').value = currentFontSize;
     document.getElementById('font-size-display').innerText = currentFontSize + 'px';
     
@@ -298,7 +313,6 @@
   </script>
 </body>
 </html>
-
 
 
 ```
