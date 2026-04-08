@@ -1,745 +1,257 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>記帳本</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --ink: #1a1a2e;
-            --ink-soft: #3d3d5c;
-            --paper: #f5f0e8;
-            --paper-warm: #ede8d8;
-            --paper-deep: #e0d8c8;
-            --gold: #c8973a;
-            --gold-light: #f0c060;
-            --red: #c0392b;
-            --red-soft: #e74c3c;
-            --green: #1a6b4a;
-            --green-soft: #27ae60;
-            --shadow: rgba(26,26,46,0.12);
-            --line: rgba(26,26,46,0.08);
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            font-family: 'Noto Serif TC', serif;
-            background: var(--paper);
-            min-height: 100vh;
-            padding: 30px 20px;
-            display: flex;
-            justify-content: center;
-            position: relative;
-            overflow-x: hidden;
-        }
-
-        /* Paper texture overlay */
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image: 
-                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* Subtle horizontal rule lines like notebook */
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image: repeating-linear-gradient(
-                transparent,
-                transparent 39px,
-                rgba(180,160,120,0.12) 39px,
-                rgba(180,160,120,0.12) 40px
-            );
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        .main-wrapper {
-            display: grid;
-            grid-template-columns: 1fr 360px;
-            gap: 28px;
-            max-width: 1100px;
-            width: 100%;
-            position: relative;
-            z-index: 1;
-        }
-
-        @media (max-width: 950px) {
-            .main-wrapper { grid-template-columns: 1fr; }
-        }
-
-        /* ──── Calendar Card ──── */
-        .calendar-card {
-            background: #fff;
-            border-radius: 4px;
-            box-shadow: 
-                4px 4px 0 var(--paper-deep),
-                8px 8px 0 rgba(180,160,120,0.25),
-                0 20px 60px rgba(26,26,46,0.1);
-            overflow: hidden;
-            border: 1px solid var(--paper-deep);
-        }
-
-        .cal-header {
-            background: var(--ink);
-            padding: 22px 28px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: relative;
-        }
-
-        .cal-header::after {
-            content: '';
-            position: absolute;
-            bottom: 0; left: 0; right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--gold), var(--gold-light), var(--gold));
-        }
-
-        #current-month {
-            font-size: 1.35rem;
-            font-weight: 700;
-            color: #fff;
-            letter-spacing: 0.12em;
-        }
-
-        .nav-btn {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            color: rgba(255,255,255,0.8);
-            width: 36px; height: 36px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 0.85rem;
-            display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s;
-        }
-        .nav-btn:hover { background: var(--gold); border-color: var(--gold); color: var(--ink); }
-
-        .cal-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-        }
-
-        .cal-day-header {
-            padding: 12px 8px;
-            background: var(--paper-warm);
-            text-align: center;
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: var(--ink-soft);
-            letter-spacing: 0.1em;
-            border-bottom: 2px solid var(--paper-deep);
-        }
-
-        .cal-day-header:first-child { color: var(--red); }
-        .cal-day-header:last-child { color: var(--ink-soft); }
-
-        .cal-cell {
-            min-height: 88px;
-            padding: 8px;
-            border: 0.5px solid var(--line);
-            cursor: pointer;
-            background: #fff;
-            position: relative;
-            transition: background 0.15s;
-        }
-
-        .cal-cell:hover { background: #fffdf7; }
-
-        .cal-cell.active {
-            background: #fffbf0 !important;
-            box-shadow: inset 0 0 0 2px var(--gold);
-            z-index: 1;
-        }
-
-        .cell-day-num {
-            font-family: 'DM Mono', monospace;
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: var(--ink-soft);
-            line-height: 1;
-        }
-
-        .cal-cell:nth-child(7n+1) .cell-day-num { color: var(--red-soft); }
-
-        .cal-cell.today .cell-day-num {
-            background: var(--ink);
-            color: #fff;
-            width: 22px; height: 22px;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.78rem;
-        }
-
-        .cell-dots {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 3px;
-            margin-top: 5px;
-        }
-
-        .cell-dot {
-            width: 5px; height: 5px;
-            border-radius: 50%;
-        }
-
-        .cell-summary {
-            position: absolute;
-            bottom: 6px; right: 8px;
-            font-family: 'DM Mono', monospace;
-            font-size: 0.7rem;
-            font-weight: 500;
-        }
-
-        /* ──── Right Panel ──── */
-        .detail-card {
-            background: #fff;
-            border-radius: 4px;
-            box-shadow: 
-                4px 4px 0 var(--paper-deep),
-                8px 8px 0 rgba(180,160,120,0.25),
-                0 20px 60px rgba(26,26,46,0.1);
-            overflow: hidden;
-            border: 1px solid var(--paper-deep);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .panel-header {
-            background: var(--ink);
-            padding: 22px 24px;
-            position: relative;
-        }
-
-        .panel-header::after {
-            content: '';
-            position: absolute;
-            bottom: 0; left: 0; right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--gold), var(--gold-light), var(--gold));
-        }
-
-        #selected-date-display {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #fff;
-            letter-spacing: 0.1em;
-        }
-
-        .panel-body {
-            padding: 22px 22px 16px;
-            flex: 1;
-        }
-
-        /* Type Toggle */
-        .type-toggle {
-            display: flex;
-            background: var(--paper-warm);
-            border-radius: 6px;
-            padding: 4px;
-            margin-bottom: 18px;
-            border: 1px solid var(--paper-deep);
-        }
-
-        .type-btn {
-            flex: 1; border: none; padding: 10px;
-            border-radius: 4px; cursor: pointer;
-            font-family: 'Noto Serif TC', serif;
-            font-weight: 600; font-size: 0.9rem;
-            background: transparent; color: #999;
-            transition: all 0.2s;
-            display: flex; align-items: center; justify-content: center; gap: 6px;
-        }
-
-        .type-btn.active.exp { background: var(--red); color: white; box-shadow: 0 2px 8px rgba(192,57,43,0.3); }
-        .type-btn.active.inc { background: var(--green); color: white; box-shadow: 0 2px 8px rgba(26,107,74,0.3); }
-
-        /* Form */
-        .form-group { margin-bottom: 14px; }
-
-        label {
-            font-size: 0.75rem;
-            color: var(--ink-soft);
-            font-weight: 600;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            display: block;
-            margin-bottom: 6px;
-        }
-
-        input, select {
-            width: 100%; padding: 11px 14px;
-            border-radius: 4px;
-            border: 1px solid var(--paper-deep);
-            background: var(--paper);
-            font-family: 'Noto Serif TC', serif;
-            font-size: 0.95rem;
-            color: var(--ink);
-            outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        input:focus, select:focus {
-            border-color: var(--gold);
-            box-shadow: 0 0 0 3px rgba(200,151,58,0.12);
-        }
-
-        input[type=number] { font-family: 'DM Mono', monospace; }
-
-        .btn-save {
-            background: var(--ink);
-            color: white; border: none;
-            padding: 13px; border-radius: 4px;
-            cursor: pointer; width: 100%;
-            font-family: 'Noto Serif TC', serif;
-            font-size: 0.95rem; font-weight: 600;
-            letter-spacing: 0.08em;
-            transition: all 0.2s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-save::after {
-            content: '';
-            position: absolute;
-            bottom: 0; left: 0; right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, var(--gold), var(--gold-light));
-        }
-
-        .btn-save:hover { background: #2a2a4a; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(26,26,46,0.25); }
-
-        .btn-cancel {
-            display: none; width: 100%; border: none;
-            background: none; cursor: pointer;
-            color: #aaa; margin-top: 10px;
-            font-family: 'Noto Serif TC', serif;
-            font-size: 0.85rem;
-            padding: 8px;
-            transition: color 0.2s;
-        }
-        .btn-cancel:hover { color: var(--red); }
-
-        /* List */
-        .list-container {
-            margin-top: 20px;
-            border-top: 1px solid var(--paper-deep);
-            padding-top: 14px;
-            overflow-y: auto;
-            max-height: 260px;
-        }
-
-        .list-container::-webkit-scrollbar { width: 4px; }
-        .list-container::-webkit-scrollbar-track { background: var(--paper); }
-        .list-container::-webkit-scrollbar-thumb { background: var(--paper-deep); border-radius: 2px; }
-
-        .list-empty {
-            text-align: center;
-            color: #bbb;
-            font-size: 0.85rem;
-            padding: 20px 0;
-            letter-spacing: 0.05em;
-        }
-
-        .item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 11px 0;
-            border-bottom: 1px solid var(--line);
-            animation: fadeSlideIn 0.25s ease;
-        }
-
-        @keyframes fadeSlideIn {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .item-left { display: flex; align-items: center; gap: 12px; }
-
-        .item-icon {
-            width: 38px; height: 38px;
-            background: var(--paper-warm);
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.9rem;
-            color: var(--ink-soft);
-            flex-shrink: 0;
-            border: 1px solid var(--paper-deep);
-        }
-
-        .item-cat {
-            font-size: 0.72rem;
-            color: #aaa;
-            letter-spacing: 0.06em;
-            margin-bottom: 2px;
-        }
-
-        .item-desc {
-            font-size: 0.9rem;
-            color: var(--ink);
-            font-weight: 600;
-        }
-
-        .item-right { display: flex; align-items: center; gap: 6px; }
-
-        .item-amount {
-            font-family: 'DM Mono', monospace;
-            font-size: 0.95rem;
-            font-weight: 500;
-        }
-
-        .item-actions { display: flex; }
-
-        .item-actions button {
-            background: none; border: none;
-            cursor: pointer; color: #ccc;
-            width: 28px; height: 28px;
-            border-radius: 4px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.8rem;
-            transition: all 0.15s;
-        }
-
-        .item-actions button:hover { background: var(--paper-warm); }
-        .item-actions .btn-edit:hover { color: var(--gold); }
-        .item-actions .btn-del:hover { color: var(--red); }
-
-        /* Monthly summary bar */
-        .summary-bar {
-            background: var(--paper-warm);
-            border-top: 1px solid var(--paper-deep);
-            padding: 14px 22px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .summary-item { text-align: center; }
-        .summary-label { font-size: 0.7rem; color: #aaa; letter-spacing: 0.08em; margin-bottom: 3px; }
-        .summary-val {
-            font-family: 'DM Mono', monospace;
-            font-size: 0.95rem;
-            font-weight: 500;
-        }
-
-        /* Stamp decoration */
-        .stamp {
-            position: absolute;
-            top: 16px; right: 20px;
-            width: 42px; height: 42px;
-            border: 2px solid rgba(200,151,58,0.4);
-            border-radius: 3px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.55rem;
-            color: rgba(200,151,58,0.5);
-            letter-spacing: 0.05em;
-            text-align: center;
-            line-height: 1.3;
-            font-weight: 600;
-            transform: rotate(4deg);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>雙人班表系統</title>
+  <!-- 引入 Tailwind CSS 處理樣式 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 引入 html2canvas 處理圖片下載 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
-<body>
+<body class="bg-slate-50 font-sans text-black min-h-screen p-2 md:p-6">
 
-<div class="main-wrapper">
-    <!-- ── 月曆 ── -->
-    <div class="calendar-card">
-        <div class="cal-header">
-            <button class="nav-btn" onclick="changeMonth(-1)">&#10094;</button>
-            <h2 id="current-month">2026年 4月</h2>
-            <button class="nav-btn" onclick="changeMonth(1)">&#10095;</button>
+  <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+    
+    <!-- 頂部：班別選單 (此區塊截圖時會被忽略) -->
+    <div class="p-4 md:p-6 border-b border-slate-200 bg-slate-100" data-html2canvas-ignore>
+      <div class="flex flex-col gap-4">
+        <!-- 說明 -->
+        <div class="flex items-center gap-2 text-sm text-slate-600 mb-2 bg-blue-50 p-3 rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500 shrink-0"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          <p>使用說明：請先點選下方任一班別按鈕，然後點擊日曆格子。點擊「下載 PNG」按鈕可將當月班表存為圖片。</p>
         </div>
-        <div id="calendar" class="cal-grid"></div>
+
+        <!-- 軒的班別 -->
+        <div>
+          <h3 class="font-bold text-lg mb-2 flex items-center gap-2">
+            <span class="bg-slate-700 text-white px-3 py-1 rounded-full text-sm">軒</span> 
+            班別選擇
+          </h3>
+          <div id="xuan-buttons" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <div class="h-px bg-slate-300 w-full my-2"></div>
+
+        <!-- 恩的班別 -->
+        <div>
+          <h3 class="font-bold text-lg mb-2 flex items-center gap-2">
+            <span class="bg-slate-700 text-white px-3 py-1 rounded-full text-sm">恩</span> 
+            班別選擇
+          </h3>
+          <div id="en-buttons" class="flex flex-wrap gap-2"></div>
+        </div>
+      </div>
     </div>
 
-    <!-- ── 右側面板 ── -->
-    <div class="detail-card">
-        <div class="panel-header">
-            <div class="stamp">記帳<br>本</div>
-            <div id="selected-date-display">請選擇日期</div>
+    <!-- === 需要截圖的區塊開始 === -->
+    <div id="capture-area" class="bg-white">
+      
+      <!-- 中間：月份切換與下載按鈕 -->
+      <div class="flex flex-col sm:flex-row justify-between items-center p-4 border-b border-slate-200 gap-4">
+        <div class="flex items-center justify-between w-full sm:w-auto gap-4">
+          <button onclick="changeMonth(-1)" class="p-2 hover:bg-slate-100 rounded-full transition-colors" data-html2canvas-ignore>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          
+          <h2 id="month-title" class="text-2xl md:text-3xl font-bold tracking-wider text-center">
+            <!-- 標題由 JS 產生 -->
+          </h2>
+          
+          <button onclick="changeMonth(1)" class="p-2 hover:bg-slate-100 rounded-full transition-colors" data-html2canvas-ignore>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
         </div>
 
-        <div class="panel-body">
-            <div class="type-toggle">
-                <button id="btn-exp" class="type-btn active exp" onclick="handleTypeChange('exp')">
-                    <i class="fa-solid fa-arrow-up-from-bracket"></i> 支出
-                </button>
-                <button id="btn-inc" class="type-btn inc" onclick="handleTypeChange('inc')">
-                    <i class="fa-solid fa-arrow-down-to-bracket"></i> 收入
-                </button>
-            </div>
+        <button id="download-btn" onclick="exportToPNG()" data-html2canvas-ignore class="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+          下載 PNG
+        </button>
+      </div>
 
-            <input type="hidden" id="edit-id">
-
-            <div class="form-group">
-                <label>類別</label>
-                <select id="category"></select>
-            </div>
-            <div class="form-group">
-                <label>備註</label>
-                <input type="text" id="desc" placeholder="例如：麥當勞、計程車…">
-            </div>
-            <div class="form-group">
-                <label>金額</label>
-                <input type="number" id="amount" placeholder="0">
-            </div>
-            <button class="btn-save" id="save-btn" onclick="saveRecord()">儲存紀錄</button>
-            <button id="cancel-btn" class="btn-cancel" onclick="resetForm()">取消編輯</button>
-
-            <div class="list-container" id="daily-list"></div>
+      <!-- 下方：日曆表格 -->
+      <div class="p-4 bg-white">
+        <!-- 星期標題 -->
+        <div class="grid grid-cols-7 gap-1 md:gap-2 mb-2">
+          <div class="text-center font-bold py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-700">一</div>
+          <div class="text-center font-bold py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-700">二</div>
+          <div class="text-center font-bold py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-700">三</div>
+          <div class="text-center font-bold py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-700">四</div>
+          <div class="text-center font-bold py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-700">五</div>
+          <div class="text-center font-bold py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-700">六</div>
+          <div class="text-center font-bold py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-700">日</div>
         </div>
-
-        <div class="summary-bar">
-            <div class="summary-item">
-                <div class="summary-label">當日支出</div>
-                <div class="summary-val" id="sum-exp" style="color:var(--red-soft)">-0</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-label">當日收入</div>
-                <div class="summary-val" id="sum-inc" style="color:var(--green-soft)">+0</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-label">結餘</div>
-                <div class="summary-val" id="sum-net">0</div>
-            </div>
+        
+        <!-- 日曆格子 -->
+        <div id="calendar-grid" class="grid grid-cols-7 gap-1 md:gap-2">
+          <!-- 格子由 JS 產生 -->
         </div>
+      </div>
     </div>
-</div>
+    <!-- === 截圖區塊結束 === -->
 
-<script>
-    const categories = {
-        exp: [
-            { id: 'food',      name: '餐飲',   icon: 'fa-utensils' },
-            { id: 'transport', name: '交通',   icon: 'fa-bus' },
-            { id: 'shopping',  name: '購物',   icon: 'fa-bag-shopping' },
-            { id: 'home',      name: '居家',   icon: 'fa-house' },
-            { id: 'fun',       name: '娛樂',   icon: 'fa-gamepad' },
-            { id: 'health',    name: '醫療',   icon: 'fa-heart-pulse' },
-            { id: 'other_exp', name: '其他支出', icon: 'fa-ellipsis' }
-        ],
-        inc: [
-            { id: 'salary',   name: '薪水',   icon: 'fa-money-bill-wave' },
-            { id: 'bonus',    name: '獎金',   icon: 'fa-gift' },
-            { id: 'invest',   name: '投資',   icon: 'fa-chart-line' },
-            { id: 'other_inc',name: '其他收入', icon: 'fa-wallet' }
-        ]
+  </div>
+
+  <script>
+    // --- 參數設定 ---
+    const SHIFT_COLORS = {
+      '早班': 'bg-yellow-200',
+      '白班': 'bg-yellow-200',
+      '長早': 'bg-orange-200',
+      '放假': 'bg-green-200',
+      '中班': 'bg-red-200',
+      '值班': 'bg-red-200',
+      '大夜': 'bg-purple-200',
+      '小夜': 'bg-blue-200',
+      '清除': 'bg-gray-100'
     };
 
-    const today = new Date();
-    let currentViewDate = new Date();
-    let selectedDateStr = today.toISOString().split('T')[0];
-    let currentType = 'exp';
-    let db = JSON.parse(localStorage.getItem('cal_finance_v4')) || {};
+    const XUAN_SHIFTS = ['早班', '長早', '中班', '放假', '大夜', '小夜', '清除'];
+    const EN_SHIFTS = ['白班', '放假', '值班', '清除'];
 
-    function init() {
-        updateCategoryOptions();
-        renderCalendar();
-        selectDate(selectedDateStr);
+    // --- 狀態管理 ---
+    let currentDate = new Date();
+    let schedule = JSON.parse(localStorage.getItem('monthlyScheduleApp')) || {};
+    let activeTool = null; // 格式 { person: 'xuan' 或 'en', shift: '班別名稱' }
+
+    // --- 畫面渲染 ---
+    // 渲染按鈕
+    function renderButtons() {
+      const createBtnHTML = (person, shift) => {
+        const isActive = activeTool?.person === person && activeTool?.shift === shift;
+        const activeClass = isActive ? 'border-slate-800 shadow-md scale-105' : 'border-transparent hover:opacity-80 hover:scale-105';
+        const isClear = shift === '清除';
+        const clearClass = isClear ? 'border-dashed border-gray-300' : '';
+        
+        return `<button 
+                  onclick="setActiveTool('${person}', '${shift}')" 
+                  class="px-4 py-2 rounded-lg font-medium transition-all duration-200 border-2 text-black ${SHIFT_COLORS[shift]} ${activeClass} ${clearClass}">
+                  ${isClear ? '🧹 ' : ''}${shift}
+                </button>`;
+      };
+
+      document.getElementById('xuan-buttons').innerHTML = XUAN_SHIFTS.map(s => createBtnHTML('xuan', s)).join('');
+      document.getElementById('en-buttons').innerHTML = EN_SHIFTS.map(s => createBtnHTML('en', s)).join('');
     }
 
-    function handleTypeChange(type) {
-        currentType = type;
-        document.getElementById('btn-exp').classList.toggle('active', type === 'exp');
-        document.getElementById('btn-inc').classList.toggle('active', type === 'inc');
-        updateCategoryOptions();
-    }
-
-    function updateCategoryOptions() {
-        const select = document.getElementById('category');
-        select.innerHTML = categories[currentType].map(cat =>
-            `<option value="${cat.id}">${cat.name}</option>`
-        ).join('');
-    }
-
+    // 渲染日曆
     function renderCalendar() {
-        const year  = currentViewDate.getFullYear();
-        const month = currentViewDate.getMonth();
-        document.getElementById('current-month').innerText = `${year}年 ${month + 1}月`;
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      document.getElementById('month-title').innerText = `${year} 年 ${month + 1} 月 班表`;
 
-        const firstDay    = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const container   = document.getElementById('calendar');
-        container.innerHTML = '';
+      const firstDayOfMonth = new Date(year, month, 1);
+      const lastDayOfMonth = new Date(year, month + 1, 0);
+      const firstDayOfWeek = firstDayOfMonth.getDay();
+      const offset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1; // 轉為週一開頭
 
-        ['日','一','二','三','四','五','六'].forEach(d => {
-            const div = document.createElement('div');
-            div.className = 'cal-day-header';
-            div.innerText = d;
-            container.appendChild(div);
+      let html = '';
+      
+      // 填補月初的空白
+      for (let i = 0; i < offset; i++) {
+        html += `<div class="bg-transparent rounded-lg min-h-[100px] md:min-h-[120px]"></div>`;
+      }
+
+      // 產生日期
+      const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+      
+      for (let d = 1; d <= lastDayOfMonth.getDate(); d++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const isToday = todayStr === dateStr;
+        const dayData = schedule[dateStr] || {};
+
+        let cellClasses = `min-h-[100px] md:min-h-[120px] p-1 md:p-2 border rounded-lg flex flex-col cursor-pointer transition-all bg-white hover:ring-2 hover:ring-blue-400 `;
+        cellClasses += isToday ? 'border-blue-400 bg-blue-50/10' : 'border-slate-300';
+
+        let shiftsHtml = '';
+        if (dayData.xuan) {
+          shiftsHtml += `<div class="px-1 py-1 md:py-1.5 rounded text-xs md:text-sm font-bold text-center text-black border border-black/10 mb-1.5 ${SHIFT_COLORS[dayData.xuan]}">軒${dayData.xuan}</div>`;
+        }
+        if (dayData.en) {
+          shiftsHtml += `<div class="px-1 py-1 md:py-1.5 rounded text-xs md:text-sm font-bold text-center text-black border border-black/10 ${SHIFT_COLORS[dayData.en]}">恩${dayData.en}</div>`;
+        }
+
+        html += `
+          <div class="${cellClasses}" onclick="handleDayClick('${dateStr}')">
+            <div class="text-right text-sm md:text-base font-bold mb-1 ${isToday ? 'text-blue-600' : 'text-slate-600'}">${d}</div>
+            <div class="flex flex-col flex-1">${shiftsHtml}</div>
+          </div>
+        `;
+      }
+      
+      document.getElementById('calendar-grid').innerHTML = html;
+    }
+
+    // --- 互動邏輯 ---
+    window.setActiveTool = function(person, shift) {
+      activeTool = { person, shift };
+      renderButtons(); // 更新按鈕樣式
+    };
+
+    window.changeMonth = function(offset) {
+      currentDate.setMonth(currentDate.getMonth() + offset);
+      renderCalendar();
+    };
+
+    window.handleDayClick = function(dateStr) {
+      if (!activeTool) return;
+
+      if (!schedule[dateStr]) {
+        schedule[dateStr] = {};
+      }
+
+      if (activeTool.shift === '清除') {
+        delete schedule[dateStr][activeTool.person];
+      } else {
+        schedule[dateStr][activeTool.person] = activeTool.shift;
+      }
+
+      // 儲存到 localStorage
+      localStorage.setItem('monthlyScheduleApp', JSON.stringify(schedule));
+      // 重新渲染日曆更新畫面
+      renderCalendar();
+    };
+
+    // --- 下載圖片功能 ---
+    window.exportToPNG = async function() {
+      const btn = document.getElementById('download-btn');
+      const originalText = btn.innerHTML;
+      
+      btn.innerHTML = '處理中...';
+      btn.classList.add('bg-slate-400', 'cursor-not-allowed');
+      btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+
+      try {
+        const captureArea = document.getElementById('capture-area');
+        const canvas = await html2canvas(captureArea, {
+          scale: 2, // 提高圖片解析度
+          backgroundColor: "#ffffff",
+          logging: false
         });
+        
+        const image = canvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.href = image;
+        link.download = `班表_${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (error) {
+        console.error("匯出圖片失敗:", error);
+        alert("匯出失敗，請重試。");
+      } finally {
+        btn.innerHTML = originalText;
+        btn.classList.remove('bg-slate-400', 'cursor-not-allowed');
+        btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+      }
+    };
 
-        for (let i = 0; i < firstDay; i++) {
-            const blank = document.createElement('div');
-            blank.className = 'cal-cell';
-            blank.style.background = '#fafaf8';
-            container.appendChild(blank);
-        }
+    // --- 初始化執行 ---
+    renderButtons();
+    renderCalendar();
 
-        for (let day = 1; day <= daysInMonth; day++) {
-            const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-            const cell    = document.createElement('div');
-            cell.className = 'cal-cell';
-            if (dateStr === selectedDateStr) cell.classList.add('active');
-
-            const isToday = (year === today.getFullYear() && month === today.getMonth() && day === today.getDate());
-            if (isToday) cell.classList.add('today');
-
-            const dayRecords = db[dateStr] || [];
-            const totalExp   = dayRecords.filter(r => r.amount < 0).reduce((a, r) => a + r.amount, 0);
-            const totalInc   = dayRecords.filter(r => r.amount > 0).reduce((a, r) => a + r.amount, 0);
-            const net        = totalExp + totalInc;
-
-            // dots
-            let dotsHTML = '';
-            if (dayRecords.length > 0) {
-                const dots = dayRecords.slice(0, 4).map(r =>
-                    `<div class="cell-dot" style="background:${r.amount < 0 ? 'var(--red-soft)' : 'var(--green-soft)'}"></div>`
-                ).join('');
-                dotsHTML = `<div class="cell-dots">${dots}</div>`;
-            }
-
-            let sumHTML = '';
-            if (net !== 0) {
-                const color = net > 0 ? 'var(--green-soft)' : 'var(--red-soft)';
-                sumHTML = `<div class="cell-summary" style="color:${color}">${net > 0 ? '+' : ''}${net.toLocaleString()}</div>`;
-            }
-
-            const dayNumClass = isToday ? 'cell-day-num' : 'cell-day-num';
-            cell.innerHTML = `<div class="${dayNumClass}">${day}</div>${dotsHTML}${sumHTML}`;
-            cell.onclick = () => selectDate(dateStr);
-            container.appendChild(cell);
-        }
-    }
-
-    function selectDate(dateStr) {
-        selectedDateStr = dateStr;
-        // Format display
-        const [y, m, d] = dateStr.split('-');
-        document.getElementById('selected-date-display').innerText = `${y} 年 ${parseInt(m)} 月 ${parseInt(d)} 日`;
-        resetForm();
-        renderDailyList();
-        updateSummary();
-        renderCalendar();
-    }
-
-    function updateSummary() {
-        const records = db[selectedDateStr] || [];
-        const exp = records.filter(r => r.amount < 0).reduce((a, r) => a + r.amount, 0);
-        const inc = records.filter(r => r.amount > 0).reduce((a, r) => a + r.amount, 0);
-        const net = exp + inc;
-        document.getElementById('sum-exp').innerText = exp.toLocaleString();
-        document.getElementById('sum-inc').innerText = `+${inc.toLocaleString()}`;
-        const netEl = document.getElementById('sum-net');
-        netEl.innerText = (net >= 0 ? '+' : '') + net.toLocaleString();
-        netEl.style.color = net >= 0 ? 'var(--green-soft)' : 'var(--red-soft)';
-    }
-
-    function renderDailyList() {
-        const listContainer = document.getElementById('daily-list');
-        listContainer.innerHTML = '';
-        const records = db[selectedDateStr] || [];
-
-        if (records.length === 0) {
-            listContainer.innerHTML = '<div class="list-empty">今日尚無記錄</div>';
-            return;
-        }
-
-        records.forEach(r => {
-            const allCats = [...categories.exp, ...categories.inc];
-            const catInfo = allCats.find(c => c.id === r.catId) || { icon: 'fa-question', name: '未知' };
-            const color   = r.amount > 0 ? 'var(--green-soft)' : 'var(--red-soft)';
-            const amtStr  = (r.amount > 0 ? '+' : '') + r.amount.toLocaleString();
-
-            const div = document.createElement('div');
-            div.className = 'item';
-            div.innerHTML = `
-                <div class="item-left">
-                    <div class="item-icon"><i class="fa-solid ${catInfo.icon}"></i></div>
-                    <div>
-                        <div class="item-cat">${catInfo.name}</div>
-                        <div class="item-desc">${r.desc}</div>
-                    </div>
-                </div>
-                <div class="item-right">
-                    <span class="item-amount" style="color:${color}">${amtStr}</span>
-                    <div class="item-actions">
-                        <button class="btn-edit" onclick="editRecord('${r.id}')"><i class="fa-solid fa-pen"></i></button>
-                        <button class="btn-del"  onclick="deleteRecord('${r.id}')"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                </div>
-            `;
-            listContainer.appendChild(div);
-        });
-    }
-
-    function saveRecord() {
-        const catId  = document.getElementById('category').value;
-        const desc   = document.getElementById('desc').value.trim() || document.querySelector(`#category option[value="${catId}"]`).text;
-        let   amount = Math.abs(parseFloat(document.getElementById('amount').value));
-        const editId = document.getElementById('edit-id').value;
-        if (!amount) return alert('請輸入金額');
-        amount = currentType === 'exp' ? -amount : amount;
-
-        if (!db[selectedDateStr]) db[selectedDateStr] = [];
-
-        if (editId) {
-            const idx = db[selectedDateStr].findIndex(r => r.id == editId);
-            db[selectedDateStr][idx] = { id: editId, catId, desc, amount };
-        } else {
-            db[selectedDateStr].push({ id: Date.now().toString(), catId, desc, amount });
-        }
-
-        localStorage.setItem('cal_finance_v4', JSON.stringify(db));
-        selectDate(selectedDateStr);
-    }
-
-    function deleteRecord(id) {
-        if (!confirm('確定要刪除嗎？')) return;
-        db[selectedDateStr] = db[selectedDateStr].filter(r => r.id != id);
-        localStorage.setItem('cal_finance_v4', JSON.stringify(db));
-        selectDate(selectedDateStr);
-    }
-
-    function editRecord(id) {
-        const record = db[selectedDateStr].find(r => r.id == id);
-        handleTypeChange(record.amount > 0 ? 'inc' : 'exp');
-        setTimeout(() => {
-            document.getElementById('category').value = record.catId;
-        }, 10);
-        document.getElementById('desc').value   = record.desc;
-        document.getElementById('amount').value = Math.abs(record.amount);
-        document.getElementById('edit-id').value = record.id;
-        document.getElementById('save-btn').innerText = '更新紀錄';
-        document.getElementById('cancel-btn').style.display = 'block';
-    }
-
-    function resetForm() {
-        document.getElementById('edit-id').value  = '';
-        document.getElementById('desc').value     = '';
-        document.getElementById('amount').value   = '';
-        document.getElementById('save-btn').innerText = '儲存紀錄';
-        document.getElementById('cancel-btn').style.display = 'none';
-        handleTypeChange('exp');
-    }
-
-    function changeMonth(step) {
-        currentViewDate.setMonth(currentViewDate.getMonth() + step);
-        renderCalendar();
-    }
-
-    init();
-</script>
+  </script>
 </body>
 </html>
+
+```
