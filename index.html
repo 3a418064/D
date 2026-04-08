@@ -5,12 +5,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>雙人班表系統</title>
-  <!-- 引入 Tailwind CSS 處理樣式 -->
+  <!-- 引入 Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- 引入 html2canvas 處理圖片下載 -->
+  <!-- 引入 html2canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
-  <!-- 新增自訂字型 Miao.ttf -->
   <style>
     @font-face {
       font-family: 'Miao';
@@ -19,9 +18,36 @@
       font-style: normal;
     }
     
-    /* 強制整個網頁使用 Miao 字型 */
     body {
       font-family: 'Miao', sans-serif !important;
+    }
+
+    /* 針對截圖優化 */
+    #capture-area {
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      background-color: white; /* 確保截圖背景是白色的 */
+    }
+
+    /* 使用 Table 單元格來達成最穩定的置中，專治 html2canvas 跑位 */
+    .shift-cell {
+      display: table;
+      width: 100%;
+      height: 100%;
+      min-height: 40px; /* 給予最低高度防止壓扁 */
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .shift-content {
+      display: table-cell;
+      vertical-align: middle; /* 絕對穩定的垂直置中 */
+      text-align: center;    /* 絕對穩定的水平置中 */
+      font-weight: bold;
+      color: black;
+      line-height: 1;
+      padding-top: 2px; /* 微調字型視覺重心 */
     }
   </style>
 </head>
@@ -29,38 +55,34 @@
 
   <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
     
-    <!-- 頂部：班別選單與設定 (此區塊截圖時會被忽略) -->
+    <!-- 頂部區塊 (不截圖) -->
     <div class="p-4 md:p-6 border-b border-slate-200 bg-slate-100" data-html2canvas-ignore>
       <div class="flex flex-col gap-4">
         <!-- 說明 -->
         <div class="flex items-center gap-2 text-sm text-slate-600 mb-2 bg-blue-50 p-3 rounded-lg">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500 shrink-0"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-          <p>使用說明：請先點選下方任一班別按鈕，然後點擊日曆格子。點擊「下載 PNG」按鈕可將當月班表存為圖片。</p>
+          <p>使用說明：請先點選下方任一班別按鈕，然後點擊日曆格子。點擊「下載圖片」按鈕存檔。</p>
         </div>
 
-        <!-- 軒的班別 -->
         <div>
           <h3 class="font-bold text-lg mb-2 flex items-center gap-2">
-            <span class="bg-slate-700 text-white px-3 py-1 rounded-full text-sm">軒</span> 
-            班別選擇
+            <span class="bg-slate-700 text-white px-3 py-1 rounded-full text-sm">軒</span> 班別選擇
           </h3>
           <div id="xuan-buttons" class="flex flex-wrap gap-2"></div>
         </div>
 
         <div class="h-px bg-slate-300 w-full my-1"></div>
 
-        <!-- 恩的班別 -->
         <div>
           <h3 class="font-bold text-lg mb-2 flex items-center gap-2">
-            <span class="bg-slate-700 text-white px-3 py-1 rounded-full text-sm">恩</span> 
-            班別選擇
+            <span class="bg-slate-700 text-white px-3 py-1 rounded-full text-sm">恩</span> 班別選擇
           </h3>
           <div id="en-buttons" class="flex flex-wrap gap-2"></div>
         </div>
 
         <div class="h-px bg-slate-300 w-full my-1"></div>
         
-        <!-- 字體大小調整工具 -->
+        <!-- 字體大小調整 -->
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center gap-4">
             <div class="flex items-center gap-2 font-bold text-slate-700">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="m5 10 7-7 7 7"/><path d="m5 14 7 7 7-7"/></svg>
@@ -72,48 +94,46 @@
       </div>
     </div>
 
-    <!-- === 需要截圖的區塊開始 === -->
+    <!-- === 截圖區塊開始 === -->
     <div id="capture-area" class="bg-white">
       
-      <!-- 中間：月份切換與下載按鈕 -->
-      <div class="flex flex-col sm:flex-row justify-between items-center p-4 border-b border-slate-200 gap-4">
-        <div class="flex items-center justify-between w-full sm:w-auto gap-4">
+      <!-- 月份與下載 -->
+      <div class="flex justify-between items-center p-4 border-b border-slate-200 gap-4">
+        <div class="flex items-center gap-4">
           <button onclick="changeMonth(-1)" class="p-2 hover:bg-slate-100 rounded-full transition-colors" data-html2canvas-ignore>
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           </button>
           
-          <h2 id="month-title" class="text-2xl md:text-3xl font-bold tracking-wider text-center pt-2">
-            <!-- 標題由 JS 產生 -->
-          </h2>
+          <!-- 標題 -->
+          <h2 id="month-title" class="text-2xl md:text-3xl font-bold tracking-wider pt-2"></h2>
           
           <button onclick="changeMonth(1)" class="p-2 hover:bg-slate-100 rounded-full transition-colors" data-html2canvas-ignore>
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
           </button>
         </div>
 
-        <button id="download-btn" onclick="exportToPNG()" data-html2canvas-ignore class="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all">
+        <button id="download-btn" onclick="exportToImage()" data-html2canvas-ignore class="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all whitespace-nowrap">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-          下載 PNG
+          下載圖片
         </button>
       </div>
 
-      <!-- 下方：日曆表格 -->
-      <div class="p-4 bg-white">
-        <!-- 星期標題 (滿版置中) -->
+      <!-- 日曆表格 -->
+      <div class="p-4">
+        <!-- 星期 -->
         <div class="grid grid-cols-7 gap-1 md:gap-2 mb-2">
-          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full pt-4">一</div>
-          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full pt-4">二</div>
-          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full pt-4">三</div>
-          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full pt-4">四</div>
-          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full pt-4">五</div>
-          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full pt-4">六</div>
-          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full pt-4">日</div>
+          <!-- 改用傳統寫法置中星期標題 -->
+          <div class="bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold text-center py-3 text-lg md:text-xl pt-4">一</div>
+          <div class="bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold text-center py-3 text-lg md:text-xl pt-4">二</div>
+          <div class="bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold text-center py-3 text-lg md:text-xl pt-4">三</div>
+          <div class="bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold text-center py-3 text-lg md:text-xl pt-4">四</div>
+          <div class="bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold text-center py-3 text-lg md:text-xl pt-4">五</div>
+          <div class="bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold text-center py-3 text-lg md:text-xl pt-4">六</div>
+          <div class="bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold text-center py-3 text-lg md:text-xl pt-4">日</div>
         </div>
         
-        <!-- 日曆格子 -->
-        <div id="calendar-grid" class="grid grid-cols-7 gap-1 md:gap-2">
-          <!-- 格子由 JS 產生 -->
-        </div>
+        <!-- 格子區 -->
+        <div id="calendar-grid" class="grid grid-cols-7 gap-1 md:gap-2"></div>
       </div>
     </div>
     <!-- === 截圖區塊結束 === -->
@@ -121,45 +141,29 @@
   </div>
 
   <script>
-    // --- 參數設定 ---
     const SHIFT_COLORS = {
-      '早班': 'bg-yellow-200',
-      '白班': 'bg-yellow-200',
-      '長早': 'bg-orange-200',
-      '放假': 'bg-green-200',
-      '中班': 'bg-red-200',
-      '值班': 'bg-red-200',
-      '大夜': 'bg-purple-200',
-      '小夜': 'bg-blue-200',
+      '早班': 'bg-yellow-200', '白班': 'bg-yellow-200',
+      '長早': 'bg-orange-200', '放假': 'bg-green-200',
+      '中班': 'bg-red-200', '值班': 'bg-red-200',
+      '大夜': 'bg-purple-200', '小夜': 'bg-blue-200',
       '清除': 'bg-gray-100'
     };
-
     const XUAN_SHIFTS = ['早班', '長早', '中班', '放假', '大夜', '小夜', '清除'];
     const EN_SHIFTS = ['白班', '放假', '值班', '清除'];
 
-    // --- 狀態管理 ---
     let currentDate = new Date();
     let schedule = JSON.parse(localStorage.getItem('monthlyScheduleApp')) || {};
     let activeTool = null;
-    
-    // 初始化字體大小
     let currentFontSize = localStorage.getItem('shiftFontSize') || '20';
 
-    // --- 畫面渲染 ---
     function renderButtons() {
       const createBtnHTML = (person, shift) => {
         const isActive = activeTool?.person === person && activeTool?.shift === shift;
         const activeClass = isActive ? 'border-slate-800 shadow-md scale-105' : 'border-transparent hover:opacity-80 hover:scale-105';
         const isClear = shift === '清除';
         const clearClass = isClear ? 'border-dashed border-gray-300' : '';
-        
-        return `<button 
-                  onclick="setActiveTool('${person}', '${shift}')" 
-                  class="px-4 py-2 rounded-lg font-medium transition-all duration-200 border-2 text-black pt-3 ${SHIFT_COLORS[shift]} ${activeClass} ${clearClass}">
-                  ${isClear ? '🧹 ' : ''}${shift}
-                </button>`;
+        return `<button onclick="setActiveTool('${person}', '${shift}')" class="px-4 py-2 rounded-lg font-medium transition-all duration-200 border-2 text-black pt-3 ${SHIFT_COLORS[shift]} ${activeClass} ${clearClass}">${isClear ? '🧹 ' : ''}${shift}</button>`;
       };
-
       document.getElementById('xuan-buttons').innerHTML = XUAN_SHIFTS.map(s => createBtnHTML('xuan', s)).join('');
       document.getElementById('en-buttons').innerHTML = EN_SHIFTS.map(s => createBtnHTML('en', s)).join('');
     }
@@ -175,21 +179,23 @@
       const offset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
 
       let html = '';
-      
       for (let i = 0; i < offset; i++) {
         html += `<div class="bg-transparent rounded-lg min-h-[140px] md:min-h-[160px]"></div>`;
       }
 
       const todayStr = new Date().toLocaleDateString('en-CA');
       
-      // 【重要修復】：移除 absolute，加入 min-height 防止 html2canvas 截圖時過度壓縮
+      // 【防跑位終極絕招】：使用 CSS Table 屬性 (.shift-cell, .shift-content)
       const createShiftBlock = (name, shiftName) => {
         if (!shiftName) return '';
+        // 為了相容性，這裡混用 class 跟 inline-style
         return `
-          <div class="flex-1 w-full rounded border border-black/10 ${SHIFT_COLORS[shiftName]}" style="display: flex; align-items: center; justify-content: center; min-height: 45px;">
-            <span style="font-size: ${currentFontSize}px; font-weight: bold; color: black; line-height: normal; display: block; text-align: center;">
-              ${name}${shiftName}
-            </span>
+          <div class="flex-1 w-full p-0 m-0 relative">
+            <div class="shift-cell ${SHIFT_COLORS[shiftName]}">
+              <div class="shift-content" style="font-size: ${currentFontSize}px;">
+                ${name}${shiftName}
+              </div>
+            </div>
           </div>
         `;
       };
@@ -209,15 +215,13 @@
         html += `
           <div class="${cellClasses}" onclick="handleDayClick('${dateStr}')">
             <div class="text-right text-sm md:text-base font-bold mb-1 ${isToday ? 'text-blue-600' : 'text-slate-600'}">${d}</div>
-            <div class="flex flex-col flex-1 gap-1 min-h-0">${shiftsHtml}</div>
+            <div class="flex flex-col flex-1 gap-1 h-full min-h-0">${shiftsHtml}</div>
           </div>
         `;
       }
-      
       document.getElementById('calendar-grid').innerHTML = html;
     }
 
-    // --- 互動邏輯 ---
     window.setActiveTool = function(person, shift) {
       activeTool = { person, shift };
       renderButtons();
@@ -231,13 +235,11 @@
     window.handleDayClick = function(dateStr) {
       if (!activeTool) return;
       if (!schedule[dateStr]) schedule[dateStr] = {};
-
       if (activeTool.shift === '清除') {
         delete schedule[dateStr][activeTool.person];
       } else {
         schedule[dateStr][activeTool.person] = activeTool.shift;
       }
-
       localStorage.setItem('monthlyScheduleApp', JSON.stringify(schedule));
       renderCalendar();
     };
@@ -250,36 +252,41 @@
     }
 
     // --- 下載圖片功能 ---
-    window.exportToPNG = async function() {
+    window.exportToImage = async function() {
       const btn = document.getElementById('download-btn');
       const originalText = btn.innerHTML;
-      
       btn.innerHTML = '處理中...';
       btn.classList.add('bg-slate-400', 'cursor-not-allowed');
       btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
 
       try {
-        if (document.fonts && document.fonts.ready) {
-            await document.fonts.ready; // 確保字型 Miao.ttf 徹底載入
-        }
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
+        
+        // 稍微延遲一下，確保瀏覽器渲染引擎已經把 CSS 算完了 (對付手機瀏覽器的延遲)
+        await new Promise(resolve => setTimeout(resolve, 300));
 
         const captureArea = document.getElementById('capture-area');
+        
         const canvas = await html2canvas(captureArea, {
           scale: 2.5,
           backgroundColor: "#ffffff",
           logging: false,
-          useCORS: true
+          useCORS: true,
+          // 關閉 html2canvas 嘗試修復字體的行為，讓它直接抓畫面
+          fontShadow: false, 
+          letterRendering: true
         });
         
-        const image = canvas.toDataURL("image/png");
+        // 我將匯出格式改為 JPG，檔案會比較小，有時候對手機相簿相容性也更好
+        const image = canvas.toDataURL("image/jpeg", 0.95);
         const link = document.createElement("a");
         link.href = image;
-        link.download = `班表_${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月.png`;
+        link.download = `班表_${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月.jpg`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
       } catch (error) {
-        console.error("匯出圖片失敗:", error);
+        console.error("匯出失敗:", error);
         alert("匯出圖片失敗，請重試。");
       } finally {
         btn.innerHTML = originalText;
@@ -288,10 +295,8 @@
       }
     };
 
-    // --- 初始化執行 ---
     document.getElementById('font-size-slider').value = currentFontSize;
     document.getElementById('font-size-display').innerText = currentFontSize + 'px';
-    
     renderButtons();
     renderCalendar();
 
