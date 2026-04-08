@@ -9,6 +9,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- 引入 html2canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- 引入 jsPDF 處理 PDF 匯出 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   
   <style>
     @font-face {
@@ -112,9 +114,9 @@
           </button>
         </div>
 
-        <button id="download-btn" onclick="exportToImage()" data-html2canvas-ignore class="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all whitespace-nowrap">
+        <button id="download-btn" onclick="exportToPDF()" data-html2canvas-ignore class="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all whitespace-nowrap">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-          下載圖片
+          下載 PDF
         </button>
       </div>
 
@@ -251,8 +253,8 @@
         renderCalendar();
     }
 
-    // --- 下載圖片功能 ---
-    window.exportToImage = async function() {
+    // --- 下載 PDF 功能 ---
+    window.exportToPDF = async function() {
       const btn = document.getElementById('download-btn');
       const originalText = btn.innerHTML;
       btn.innerHTML = '處理中...';
@@ -272,22 +274,31 @@
           backgroundColor: "#ffffff",
           logging: false,
           useCORS: true,
-          // 關閉 html2canvas 嘗試修復字體的行為，讓它直接抓畫面
           fontShadow: false, 
           letterRendering: true
         });
         
-        // 我將匯出格式改為 JPG，檔案會比較小，有時候對手機相簿相容性也更好
-        const image = canvas.toDataURL("image/jpeg", 0.95);
-        const link = document.createElement("a");
-        link.href = image;
-        link.download = `班表_${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月.jpg`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const imgData = canvas.toDataURL("image/jpeg", 0.95);
+        
+        // 初始化 jsPDF
+        const { jsPDF } = window.jspdf;
+        
+        // 設定 PDF 尺寸為畫布的實際像素，確保完美滿版不留白
+        const pdfWidth = canvas.width;
+        const pdfHeight = canvas.height;
+        const pdf = new jsPDF({
+          orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
+          unit: 'px',
+          format: [pdfWidth, pdfHeight]
+        });
+        
+        // 將截圖圖片寫入 PDF
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`班表_${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月.pdf`);
+        
       } catch (error) {
         console.error("匯出失敗:", error);
-        alert("匯出圖片失敗，請重試。");
+        alert("匯出 PDF 失敗，請重試。");
       } finally {
         btn.innerHTML = originalText;
         btn.classList.remove('bg-slate-400', 'cursor-not-allowed');
@@ -303,6 +314,7 @@
   </script>
 </body>
 </html>
+
 
 
 ```
