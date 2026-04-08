@@ -23,12 +23,6 @@
     body {
       font-family: 'Miao', sans-serif !important;
     }
-
-    /* 確保截圖時字體更清晰 */
-    #capture-area {
-      text-rendering: optimizeLegibility;
-      -webkit-font-smoothing: antialiased;
-    }
   </style>
 </head>
 <body class="bg-slate-50 font-sans text-black min-h-screen p-2 md:p-6">
@@ -146,13 +140,12 @@
     // --- 狀態管理 ---
     let currentDate = new Date();
     let schedule = JSON.parse(localStorage.getItem('monthlyScheduleApp')) || {};
-    let activeTool = null; // 格式 { person: 'xuan' 或 'en', shift: '班別名稱' }
+    let activeTool = null;
     
-    // 初始化字體大小 (優先讀取 localStorage，預設 20px)
+    // 初始化字體大小
     let currentFontSize = localStorage.getItem('shiftFontSize') || '20';
 
     // --- 畫面渲染 ---
-    // 渲染按鈕
     function renderButtons() {
       const createBtnHTML = (person, shift) => {
         const isActive = activeTool?.person === person && activeTool?.shift === shift;
@@ -171,7 +164,6 @@
       document.getElementById('en-buttons').innerHTML = EN_SHIFTS.map(s => createBtnHTML('en', s)).join('');
     }
 
-    // 渲染日曆
     function renderCalendar() {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
@@ -180,26 +172,24 @@
       const firstDayOfMonth = new Date(year, month, 1);
       const lastDayOfMonth = new Date(year, month + 1, 0);
       const firstDayOfWeek = firstDayOfMonth.getDay();
-      const offset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1; // 轉為週一開頭
+      const offset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
 
       let html = '';
       
-      // 填補月初的空白
       for (let i = 0; i < offset; i++) {
-        html += `<div class="bg-transparent rounded-lg min-h-[130px] md:min-h-[150px]"></div>`;
+        html += `<div class="bg-transparent rounded-lg min-h-[140px] md:min-h-[160px]"></div>`;
       }
 
-      // 產生日期
-      const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+      const todayStr = new Date().toLocaleDateString('en-CA');
       
-      // 專門為解決 html2canvas 自訂字型跑位設計的 HTML 結構
+      // 【重要修復】：移除 absolute，加入 min-height 防止 html2canvas 截圖時過度壓縮
       const createShiftBlock = (name, shiftName) => {
         if (!shiftName) return '';
         return `
-          <div class="flex-1 w-full rounded border border-black/10 relative overflow-hidden ${SHIFT_COLORS[shiftName]}">
-            <div style="font-size: ${currentFontSize}px; line-height: 1;" class="absolute inset-0 flex items-center justify-center font-bold text-black pt-1">
-              <span>${name}${shiftName}</span>
-            </div>
+          <div class="flex-1 w-full rounded border border-black/10 ${SHIFT_COLORS[shiftName]}" style="display: flex; align-items: center; justify-content: center; min-height: 45px;">
+            <span style="font-size: ${currentFontSize}px; font-weight: bold; color: black; line-height: normal; display: block; text-align: center;">
+              ${name}${shiftName}
+            </span>
           </div>
         `;
       };
@@ -209,7 +199,7 @@
         const isToday = todayStr === dateStr;
         const dayData = schedule[dateStr] || {};
 
-        let cellClasses = `min-h-[130px] md:min-h-[150px] p-1 md:p-2 border rounded-lg flex flex-col cursor-pointer transition-all bg-white hover:ring-2 hover:ring-blue-400 `;
+        let cellClasses = `min-h-[140px] md:min-h-[160px] p-1 md:p-2 border rounded-lg flex flex-col cursor-pointer transition-all bg-white hover:ring-2 hover:ring-blue-400 `;
         cellClasses += isToday ? 'border-blue-400 bg-blue-50/10' : 'border-slate-300';
 
         let shiftsHtml = '';
@@ -230,7 +220,7 @@
     // --- 互動邏輯 ---
     window.setActiveTool = function(person, shift) {
       activeTool = { person, shift };
-      renderButtons(); // 更新按鈕樣式
+      renderButtons();
     };
 
     window.changeMonth = function(offset) {
@@ -240,10 +230,7 @@
 
     window.handleDayClick = function(dateStr) {
       if (!activeTool) return;
-
-      if (!schedule[dateStr]) {
-        schedule[dateStr] = {};
-      }
+      if (!schedule[dateStr]) schedule[dateStr] = {};
 
       if (activeTool.shift === '清除') {
         delete schedule[dateStr][activeTool.person];
@@ -255,7 +242,6 @@
       renderCalendar();
     };
     
-    // 更新字體大小
     window.updateFontSize = function(val) {
         currentFontSize = val;
         document.getElementById('font-size-display').innerText = val + 'px';
@@ -273,14 +259,13 @@
       btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
 
       try {
-        // 確保自訂字型完全載入後再進行截圖
         if (document.fonts && document.fonts.ready) {
-            await document.fonts.ready;
+            await document.fonts.ready; // 確保字型 Miao.ttf 徹底載入
         }
 
         const captureArea = document.getElementById('capture-area');
         const canvas = await html2canvas(captureArea, {
-          scale: 2.5, // 稍微提高解析度讓字型渲染更完美
+          scale: 2.5,
           backgroundColor: "#ffffff",
           logging: false,
           useCORS: true
@@ -316,4 +301,3 @@
 
 
 ```
-
