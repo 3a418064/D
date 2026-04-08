@@ -1,658 +1,305 @@
+```html
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>班表系統</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;700&family=DM+Serif+Display&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <title>雙人班表系統</title>
+  <!-- 引入 Tailwind CSS 處理樣式 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 引入 html2canvas 處理圖片下載 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  
+  <!-- 新增自訂字型 Miao.ttf -->
   <style>
-    :root {
-      --ink: #1a1a2e;
-      --ink-soft: #4a4a6a;
-      --ink-faint: #9090b0;
-      --paper: #faf9f7;
-      --paper-warm: #f4f1eb;
-      --paper-card: #ffffff;
-      --accent: #c9763a;
-      --accent-light: #f5e8d8;
-      --rule: #e8e4dc;
-
-      --xuan-early: #fef3c7;
-      --xuan-early-border: #f59e0b;
-      --xuan-long-early: #fde8d0;
-      --xuan-long-early-border: #f97316;
-      --xuan-mid: #fce7e7;
-      --xuan-mid-border: #ef4444;
-      --xuan-off: #dcfce7;
-      --xuan-off-border: #22c55e;
-      --xuan-night: #ede9fe;
-      --xuan-night-border: #8b5cf6;
-      --xuan-small-night: #dbeafe;
-      --xuan-small-night-border: #3b82f6;
+    @font-face {
+      font-family: 'Miao';
+      src: url('./Miao.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
     }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
+    
+    /* 強制整個網頁使用 Miao 字型 */
     body {
-      font-family: 'Noto Serif TC', serif;
-      background: var(--paper);
-      color: var(--ink);
-      min-height: 100vh;
-      background-image: 
-        radial-gradient(ellipse at 20% 10%, rgba(201,118,58,0.06) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 90%, rgba(139,92,246,0.04) 0%, transparent 50%);
+      font-family: 'Miao', sans-serif !important;
     }
-
-    /* ── WRAPPER ── */
-    .app-wrapper {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 24px 16px 48px;
-    }
-
-    /* ── HEADER ── */
-    .app-header {
-      text-align: center;
-      margin-bottom: 32px;
-      padding-bottom: 20px;
-      position: relative;
-    }
-    .app-header::after {
-      content: '';
-      display: block;
-      width: 60px;
-      height: 2px;
-      background: var(--accent);
-      margin: 16px auto 0;
-      border-radius: 2px;
-    }
-    .app-title {
-      font-family: 'DM Serif Display', serif;
-      font-size: clamp(26px, 5vw, 38px);
-      letter-spacing: 0.12em;
-      color: var(--ink);
-      line-height: 1.2;
-    }
-    .app-subtitle {
-      font-size: 12px;
-      letter-spacing: 0.25em;
-      color: var(--ink-faint);
-      text-transform: uppercase;
-      margin-top: 6px;
-    }
-
-    /* ── CONTROL PANEL ── */
-    .control-panel {
-      background: var(--paper-card);
-      border: 1px solid var(--rule);
-      border-radius: 16px;
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
-    }
-
-    .notice-bar {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      background: var(--accent-light);
-      border-left: 3px solid var(--accent);
-      border-radius: 8px;
-      padding: 10px 14px;
-      margin-bottom: 20px;
-      font-size: 13px;
-      color: var(--ink-soft);
-      line-height: 1.6;
-    }
-    .notice-bar svg { flex-shrink: 0; color: var(--accent); margin-top: 2px; }
-
-    .person-section { margin-bottom: 16px; }
-    .person-section:last-of-type { margin-bottom: 0; }
-
-    .person-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-    .person-badge {
-      width: 30px; height: 30px;
-      border-radius: 50%;
-      background: var(--ink);
-      color: #fff;
-      font-size: 13px;
-      font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-      letter-spacing: 0;
-    }
-    .person-name-text {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--ink-soft);
-      letter-spacing: 0.08em;
-    }
-
-    .shift-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
-
-    .shift-btn {
-      padding: 7px 16px;
-      border-radius: 8px;
-      border: 1.5px solid transparent;
-      font-family: 'Noto Serif TC', serif;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.18s ease;
-      position: relative;
-      background: var(--paper-warm);
-      color: var(--ink);
-      letter-spacing: 0.05em;
-    }
-    .shift-btn:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
-    .shift-btn.active {
-      border-color: var(--ink) !important;
-      box-shadow: 0 0 0 2px var(--ink), 0 3px 12px rgba(0,0,0,0.12);
-      transform: translateY(-1px);
-    }
-    .shift-btn.clear-btn {
-      border-style: dashed;
-      border-color: var(--ink-faint);
-      color: var(--ink-faint);
-      background: transparent;
-    }
-    .shift-btn.clear-btn:hover { border-color: var(--ink-soft); color: var(--ink-soft); }
-
-    .divider {
-      height: 1px;
-      background: var(--rule);
-      margin: 16px 0;
-    }
-
-    /* Font slider */
-    .font-control {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    .font-control-label {
-      font-size: 13px;
-      color: var(--ink-soft);
-      font-weight: 500;
-      white-space: nowrap;
-    }
-    input[type="range"] {
-      flex: 1;
-      min-width: 100px;
-      max-width: 200px;
-      accent-color: var(--accent);
-      cursor: pointer;
-    }
-    .font-size-badge {
-      font-family: 'DM Mono', monospace;
-      font-size: 12px;
-      background: var(--paper-warm);
-      border: 1px solid var(--rule);
-      color: var(--ink-soft);
-      padding: 3px 10px;
-      border-radius: 20px;
-      white-space: nowrap;
-    }
-
-    /* ── CALENDAR CARD ── */
-    #capture-area {
-      background: var(--paper-card);
-      border: 1px solid var(--rule);
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
-    }
-
-    .calendar-nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 20px 24px;
-      border-bottom: 1px solid var(--rule);
-      background: var(--paper-card);
-    }
-
-    .nav-btn {
-      width: 36px; height: 36px;
-      border: 1px solid var(--rule);
-      border-radius: 10px;
-      background: var(--paper-warm);
-      color: var(--ink-soft);
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.15s ease;
-    }
-    .nav-btn:hover {
-      background: var(--ink);
-      color: #fff;
-      border-color: var(--ink);
-    }
-
-    .month-display { text-align: center; }
-    .month-year {
-      font-family: 'DM Serif Display', serif;
-      font-size: clamp(20px, 4vw, 28px);
-      letter-spacing: 0.08em;
-      color: var(--ink);
-      line-height: 1;
-    }
-    .month-sub {
-      font-size: 11px;
-      letter-spacing: 0.2em;
-      color: var(--ink-faint);
-      text-transform: uppercase;
-      margin-top: 4px;
-    }
-
-    .download-btn {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 9px 18px;
-      background: var(--ink);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      font-family: 'Noto Serif TC', serif;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.18s ease;
-      letter-spacing: 0.05em;
-    }
-    .download-btn:hover {
-      background: var(--accent);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(201,118,58,0.3);
-    }
-
-    /* ── CALENDAR GRID ── */
-    .calendar-body { padding: 20px; }
-
-    .weekday-header {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 6px;
-      margin-bottom: 8px;
-    }
-    .weekday-cell {
-      text-align: center;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      color: var(--ink-faint);
-      padding: 8px 0;
-      text-transform: uppercase;
-    }
-    .weekday-cell.weekend { color: var(--accent); }
-
-    #calendar-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 6px;
-    }
-
-    .day-cell {
-      min-height: 110px;
-      border: 1px solid var(--rule);
-      border-radius: 10px;
-      padding: 8px;
-      cursor: pointer;
-      background: var(--paper-card);
-      transition: all 0.15s ease;
-      display: flex;
-      flex-direction: column;
-    }
-    .day-cell:hover {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(201,118,58,0.15);
-      transform: translateY(-1px);
-    }
-    .day-cell.today {
-      border-color: var(--accent);
-      background: linear-gradient(135deg, #fff 0%, #fef9f5 100%);
-    }
-    .day-cell.empty {
-      background: transparent;
-      border-color: transparent;
-      pointer-events: none;
-    }
-
-    .day-number {
-      font-family: 'DM Mono', monospace;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--ink-faint);
-      text-align: right;
-      margin-bottom: 5px;
-      line-height: 1;
-    }
-    .day-cell.today .day-number {
-      color: var(--accent);
-      font-weight: 700;
-    }
-    .day-cell.weekend-day .day-number { color: #c9763a99; }
-
-    .shifts-container {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      gap: 4px;
-    }
-
-    .shift-tag {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 6px;
-      font-weight: 700;
-      text-align: center;
-      border: 1px solid transparent;
-      min-height: 28px;
-      letter-spacing: 0.02em;
-      line-height: 1.2;
-    }
-
-    /* Shift color tokens */
-    .shift-早班  { background: #fef3c7; border-color: #fbbf24; color: #78350f; }
-    .shift-白班  { background: #fef3c7; border-color: #fbbf24; color: #78350f; }
-    .shift-長早  { background: #fde8d0; border-color: #fb923c; color: #7c2d12; }
-    .shift-中班  { background: #fce7e7; border-color: #f87171; color: #7f1d1d; }
-    .shift-值班  { background: #fce7e7; border-color: #f87171; color: #7f1d1d; }
-    .shift-放假  { background: #dcfce7; border-color: #4ade80; color: #14532d; }
-    .shift-大夜  { background: #ede9fe; border-color: #a78bfa; color: #3b0764; }
-    .shift-小夜  { background: #dbeafe; border-color: #60a5fa; color: #1e3a8a; }
-
-    /* ── TODAY DOT ── */
-    .today-dot {
-      width: 5px; height: 5px;
-      background: var(--accent);
-      border-radius: 50%;
-      margin: 0 auto 3px;
-    }
-
-    /* ── LEGEND ── */
-    .legend-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px 16px;
-      padding: 14px 24px;
-      border-top: 1px solid var(--rule);
-      background: var(--paper-warm);
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 11px;
-      color: var(--ink-soft);
-    }
-    .legend-dot {
-      width: 10px; height: 10px;
-      border-radius: 3px;
-      border: 1px solid;
-    }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 600px) {
-      .day-cell { min-height: 80px; padding: 5px; }
-      .shift-tag { font-size: 11px; min-height: 22px; }
-      .calendar-body { padding: 12px; }
-      .control-panel { padding: 16px; }
-    }
-
-    /* Smooth transitions */
-    #calendar-grid { transition: opacity 0.2s ease; }
   </style>
 </head>
-<body>
+<body class="bg-slate-50 font-sans text-black min-h-screen p-2 md:p-6">
 
-<div class="app-wrapper">
+  <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+    
+    <!-- 頂部：班別選單與設定 (此區塊截圖時會被忽略) -->
+    <div class="p-4 md:p-6 border-b border-slate-200 bg-slate-100" data-html2canvas-ignore>
+      <div class="flex flex-col gap-4">
+        <!-- 說明 -->
+        <div class="flex items-center gap-2 text-sm text-slate-600 mb-2 bg-blue-50 p-3 rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500 shrink-0"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          <p>使用說明：請先點選下方任一班別按鈕，然後點擊日曆格子。點擊「下載 PNG」按鈕可將當月班表存為圖片。</p>
+        </div>
 
-  <!-- Header -->
-  <header class="app-header">
-    <div class="app-title">班 表 系 統</div>
-    <div class="app-subtitle">Monthly Schedule · 排班管理</div>
-  </header>
+        <!-- 軒的班別 -->
+        <div>
+          <h3 class="font-bold text-lg mb-2 flex items-center gap-2">
+            <span class="bg-slate-700 text-white px-3 py-1 rounded-full text-sm">軒</span> 
+            班別選擇
+          </h3>
+          <div id="xuan-buttons" class="flex flex-wrap gap-2"></div>
+        </div>
 
-  <!-- Control Panel -->
-  <div class="control-panel" data-html2canvas-ignore>
+        <div class="h-px bg-slate-300 w-full my-1"></div>
 
-    <div class="notice-bar">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-      選擇班別後，點擊日期格子即可標記班表。資料自動儲存於瀏覽器。
-    </div>
+        <!-- 恩的班別 -->
+        <div>
+          <h3 class="font-bold text-lg mb-2 flex items-center gap-2">
+            <span class="bg-slate-700 text-white px-3 py-1 rounded-full text-sm">恩</span> 
+            班別選擇
+          </h3>
+          <div id="en-buttons" class="flex flex-wrap gap-2"></div>
+        </div>
 
-    <!-- 軒 -->
-    <div class="person-section">
-      <div class="person-label">
-        <div class="person-badge">軒</div>
-        <span class="person-name-text">選擇班別</span>
+        <div class="h-px bg-slate-300 w-full my-1"></div>
+        
+        <!-- 字體大小調整工具 -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center gap-4">
+            <div class="flex items-center gap-2 font-bold text-slate-700">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="m5 10 7-7 7 7"/><path d="m5 14 7 7 7-7"/></svg>
+                表格班別字體大小: 
+            </div>
+            <input type="range" id="font-size-slider" min="12" max="36" value="20" class="w-full max-w-xs accent-indigo-600" oninput="updateFontSize(this.value)">
+            <span id="font-size-display" class="font-mono bg-slate-100 px-2 py-1 rounded text-sm text-slate-600 w-12 text-center">20px</span>
+        </div>
       </div>
-      <div class="shift-buttons" id="xuan-buttons"></div>
     </div>
 
-    <div class="divider"></div>
+    <!-- === 需要截圖的區塊開始 === -->
+    <div id="capture-area" class="bg-white">
+      
+      <!-- 中間：月份切換與下載按鈕 -->
+      <div class="flex flex-col sm:flex-row justify-between items-center p-4 border-b border-slate-200 gap-4">
+        <div class="flex items-center justify-between w-full sm:w-auto gap-4">
+          <button onclick="changeMonth(-1)" class="p-2 hover:bg-slate-100 rounded-full transition-colors" data-html2canvas-ignore>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          
+          <h2 id="month-title" class="text-2xl md:text-3xl font-bold tracking-wider text-center">
+            <!-- 標題由 JS 產生 -->
+          </h2>
+          
+          <button onclick="changeMonth(1)" class="p-2 hover:bg-slate-100 rounded-full transition-colors" data-html2canvas-ignore>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+        </div>
 
-    <!-- 恩 -->
-    <div class="person-section">
-      <div class="person-label">
-        <div class="person-badge">恩</div>
-        <span class="person-name-text">選擇班別</span>
+        <button id="download-btn" onclick="exportToPNG()" data-html2canvas-ignore class="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+          下載 PNG
+        </button>
       </div>
-      <div class="shift-buttons" id="en-buttons"></div>
-    </div>
 
-    <div class="divider"></div>
-
-    <!-- Font size -->
-    <div class="font-control">
-      <span class="font-control-label">字體大小</span>
-      <input type="range" id="font-size-slider" min="10" max="20" value="14" oninput="updateFontSize(this.value)">
-      <span class="font-size-badge" id="font-size-display">14px</span>
+      <!-- 下方：日曆表格 -->
+      <div class="p-4 bg-white">
+        <!-- 星期標題 (滿版置中) -->
+        <div class="grid grid-cols-7 gap-1 md:gap-2 mb-2">
+          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full">一</div>
+          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full">二</div>
+          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full">三</div>
+          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full">四</div>
+          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full">五</div>
+          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full">六</div>
+          <div class="flex items-center justify-center font-bold py-3 text-lg md:text-xl bg-slate-100 border border-slate-200 rounded-lg text-slate-700 w-full">日</div>
+        </div>
+        
+        <!-- 日曆格子 -->
+        <div id="calendar-grid" class="grid grid-cols-7 gap-1 md:gap-2">
+          <!-- 格子由 JS 產生 -->
+        </div>
+      </div>
     </div>
+    <!-- === 截圖區塊結束 === -->
 
   </div>
 
-  <!-- Calendar Card -->
-  <div id="capture-area">
-
-    <!-- Navigation -->
-    <div class="calendar-nav">
-      <button class="nav-btn" onclick="changeMonth(-1)" data-html2canvas-ignore>
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-      </button>
-
-      <div class="month-display">
-        <div class="month-year" id="month-title"></div>
-        <div class="month-sub" id="month-sub"></div>
-      </div>
-
-      <button class="nav-btn" onclick="changeMonth(1)" data-html2canvas-ignore>
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-      </button>
-    </div>
-
-    <!-- Calendar Body -->
-    <div class="calendar-body">
-      <div class="weekday-header">
-        <div class="weekday-cell">Mon</div>
-        <div class="weekday-cell">Tue</div>
-        <div class="weekday-cell">Wed</div>
-        <div class="weekday-cell">Thu</div>
-        <div class="weekday-cell">Fri</div>
-        <div class="weekday-cell weekend">Sat</div>
-        <div class="weekday-cell weekend">Sun</div>
-      </div>
-      <div id="calendar-grid"></div>
-    </div>
-
-    <!-- Legend -->
-    <div class="legend-row">
-      <div class="legend-item"><div class="legend-dot shift-早班"></div> 早班 / 白班</div>
-      <div class="legend-item"><div class="legend-dot shift-長早"></div> 長早</div>
-      <div class="legend-item"><div class="legend-dot shift-中班"></div> 中班 / 值班</div>
-      <div class="legend-item"><div class="legend-dot shift-放假"></div> 放假</div>
-      <div class="legend-item"><div class="legend-dot shift-大夜"></div> 大夜</div>
-      <div class="legend-item"><div class="legend-dot shift-小夜"></div> 小夜</div>
-    </div>
-
-    <!-- Download -->
-    <div style="display:flex; justify-content:flex-end; padding:14px 20px; border-top:1px solid var(--rule);" data-html2canvas-ignore>
-      <button id="download-btn" class="download-btn" onclick="exportToPNG()">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-        下載 PNG
-      </button>
-    </div>
-
-  </div>
-
-</div>
-
-<script>
-  // ── Config ──
-  const XUAN_SHIFTS = ['早班', '長早', '中班', '放假', '大夜', '小夜', '清除'];
-  const EN_SHIFTS   = ['白班', '放假', '值班', '清除'];
-  const MONTH_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-
-  // ── State ──
-  let currentDate = new Date();
-  let schedule    = JSON.parse(localStorage.getItem('scheduleApp_v2')) || {};
-  let activeTool  = null;
-  let currentFontSize = parseInt(localStorage.getItem('shiftFontSize') || '14');
-
-  // ── Render Buttons ──
-  function renderButtons() {
-    const make = (person, shift) => {
-      const isActive  = activeTool?.person === person && activeTool?.shift === shift;
-      const isClear   = shift === '清除';
-      const shiftClass = !isClear ? `shift-${shift}` : '';
-      return `<button
-        onclick="setActiveTool('${person}','${shift}')"
-        class="shift-btn ${isClear ? 'clear-btn' : ''} ${shiftClass} ${isActive ? 'active' : ''}">
-        ${isClear ? '✕ 清除' : shift}
-      </button>`;
+  <script>
+    // --- 參數設定 ---
+    const SHIFT_COLORS = {
+      '早班': 'bg-yellow-200',
+      '白班': 'bg-yellow-200',
+      '長早': 'bg-orange-200',
+      '放假': 'bg-green-200',
+      '中班': 'bg-red-200',
+      '值班': 'bg-red-200',
+      '大夜': 'bg-purple-200',
+      '小夜': 'bg-blue-200',
+      '清除': 'bg-gray-100'
     };
-    document.getElementById('xuan-buttons').innerHTML = XUAN_SHIFTS.map(s => make('xuan', s)).join('');
-    document.getElementById('en-buttons').innerHTML   = EN_SHIFTS.map(s => make('en', s)).join('');
-  }
 
-  // ── Render Calendar ──
-  function renderCalendar() {
-    const year  = currentDate.getFullYear();
-    const month = currentDate.getMonth();
+    const XUAN_SHIFTS = ['早班', '長早', '中班', '放假', '大夜', '小夜', '清除'];
+    const EN_SHIFTS = ['白班', '放假', '值班', '清除'];
 
-    document.getElementById('month-title').textContent = `${year} 年 ${month + 1} 月`;
-    document.getElementById('month-sub').textContent   = MONTH_EN[month] + ' · Schedule';
+    // --- 狀態管理 ---
+    let currentDate = new Date();
+    let schedule = JSON.parse(localStorage.getItem('monthlyScheduleApp')) || {};
+    let activeTool = null; // 格式 { person: 'xuan' 或 'en', shift: '班別名稱' }
+    
+    // 初始化字體大小 (優先讀取 localStorage，預設 20px)
+    let currentFontSize = localStorage.getItem('shiftFontSize') || '20';
 
-    const firstDay   = new Date(year, month, 1);
-    const lastDay    = new Date(year, month + 1, 0);
-    const offset     = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-    const todayStr   = new Date().toLocaleDateString('en-CA');
+    // --- 畫面渲染 ---
+    // 渲染按鈕
+    function renderButtons() {
+      const createBtnHTML = (person, shift) => {
+        const isActive = activeTool?.person === person && activeTool?.shift === shift;
+        const activeClass = isActive ? 'border-slate-800 shadow-md scale-105' : 'border-transparent hover:opacity-80 hover:scale-105';
+        const isClear = shift === '清除';
+        const clearClass = isClear ? 'border-dashed border-gray-300' : '';
+        
+        return `<button 
+                  onclick="setActiveTool('${person}', '${shift}')" 
+                  class="px-4 py-2 rounded-lg font-medium transition-all duration-200 border-2 text-black ${SHIFT_COLORS[shift]} ${activeClass} ${clearClass}">
+                  ${isClear ? '🧹 ' : ''}${shift}
+                </button>`;
+      };
 
-    let html = '';
-
-    // Empty cells
-    for (let i = 0; i < offset; i++) {
-      html += `<div class="day-cell empty"></div>`;
+      document.getElementById('xuan-buttons').innerHTML = XUAN_SHIFTS.map(s => createBtnHTML('xuan', s)).join('');
+      document.getElementById('en-buttons').innerHTML = EN_SHIFTS.map(s => createBtnHTML('en', s)).join('');
     }
 
-    for (let d = 1; d <= lastDay.getDate(); d++) {
-      const dateStr  = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const dayData  = schedule[dateStr] || {};
-      const isToday  = dateStr === todayStr;
-      const dayOfWeek = new Date(year, month, d).getDay(); // 0=Sun, 6=Sat
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    // 渲染日曆
+    function renderCalendar() {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      document.getElementById('month-title').innerText = `${year} 年 ${month + 1} 月 班表`;
 
-      let shiftsHtml = '';
-      if (dayData.xuan) {
-        shiftsHtml += `<div class="shift-tag shift-${dayData.xuan}" style="font-size:${currentFontSize}px">軒 ${dayData.xuan}</div>`;
-      }
-      if (dayData.en) {
-        shiftsHtml += `<div class="shift-tag shift-${dayData.en}" style="font-size:${currentFontSize}px">恩 ${dayData.en}</div>`;
+      const firstDayOfMonth = new Date(year, month, 1);
+      const lastDayOfMonth = new Date(year, month + 1, 0);
+      const firstDayOfWeek = firstDayOfMonth.getDay();
+      const offset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1; // 轉為週一開頭
+
+      let html = '';
+      
+      // 填補月初的空白
+      for (let i = 0; i < offset; i++) {
+        html += `<div class="bg-transparent rounded-lg min-h-[120px] md:min-h-[140px]"></div>`;
       }
 
-      html += `
-        <div class="day-cell ${isToday ? 'today' : ''} ${isWeekend ? 'weekend-day' : ''}" onclick="handleDayClick('${dateStr}')">
-          ${isToday ? '<div class="today-dot"></div>' : ''}
-          <div class="day-number">${d}</div>
-          <div class="shifts-container">${shiftsHtml}</div>
-        </div>`;
+      // 產生日期
+      const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+      
+      for (let d = 1; d <= lastDayOfMonth.getDate(); d++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const isToday = todayStr === dateStr;
+        const dayData = schedule[dateStr] || {};
+
+        let cellClasses = `min-h-[120px] md:min-h-[140px] p-1 md:p-2 border rounded-lg flex flex-col cursor-pointer transition-all bg-white hover:ring-2 hover:ring-blue-400 `;
+        cellClasses += isToday ? 'border-blue-400 bg-blue-50/10' : 'border-slate-300';
+
+        let shiftsHtml = '';
+        if (dayData.xuan) {
+          // 套用動態字體大小樣式，並設定滿版置中
+          shiftsHtml += `<div style="font-size: ${currentFontSize}px;" class="flex-1 flex items-center justify-center w-full rounded font-bold text-black border border-black/10 ${SHIFT_COLORS[dayData.xuan]}">軒${dayData.xuan}</div>`;
+        }
+        if (dayData.en) {
+          // 套用動態字體大小樣式，並設定滿版置中
+          shiftsHtml += `<div style="font-size: ${currentFontSize}px;" class="flex-1 flex items-center justify-center w-full rounded font-bold text-black border border-black/10 ${SHIFT_COLORS[dayData.en]}">恩${dayData.en}</div>`;
+        }
+
+        html += `
+          <div class="${cellClasses}" onclick="handleDayClick('${dateStr}')">
+            <div class="text-right text-sm md:text-base font-bold mb-1 ${isToday ? 'text-blue-600' : 'text-slate-600'}">${d}</div>
+            <div class="flex flex-col flex-1 gap-1">${shiftsHtml}</div>
+          </div>
+        `;
+      }
+      
+      document.getElementById('calendar-grid').innerHTML = html;
     }
 
-    const grid = document.getElementById('calendar-grid');
-    grid.style.opacity = '0';
-    grid.innerHTML = html;
-    requestAnimationFrame(() => { grid.style.opacity = '1'; });
-  }
+    // --- 互動邏輯 ---
+    window.setActiveTool = function(person, shift) {
+      activeTool = { person, shift };
+      renderButtons(); // 更新按鈕樣式
+    };
 
-  // ── Handlers ──
-  window.setActiveTool = function(person, shift) {
-    activeTool = { person, shift };
+    window.changeMonth = function(offset) {
+      currentDate.setMonth(currentDate.getMonth() + offset);
+      renderCalendar();
+    };
+
+    window.handleDayClick = function(dateStr) {
+      if (!activeTool) return;
+
+      if (!schedule[dateStr]) {
+        schedule[dateStr] = {};
+      }
+
+      if (activeTool.shift === '清除') {
+        delete schedule[dateStr][activeTool.person];
+      } else {
+        schedule[dateStr][activeTool.person] = activeTool.shift;
+      }
+
+      // 儲存到 localStorage
+      localStorage.setItem('monthlyScheduleApp', JSON.stringify(schedule));
+      // 重新渲染日曆更新畫面
+      renderCalendar();
+    };
+    
+    // 更新字體大小
+    window.updateFontSize = function(val) {
+        currentFontSize = val;
+        document.getElementById('font-size-display').innerText = val + 'px';
+        localStorage.setItem('shiftFontSize', val); // 記憶設定
+        renderCalendar(); // 立即重新繪製日曆套用新字體
+    }
+
+    // --- 下載圖片功能 ---
+    window.exportToPNG = async function() {
+      const btn = document.getElementById('download-btn');
+      const originalText = btn.innerHTML;
+      
+      btn.innerHTML = '處理中...';
+      btn.classList.add('bg-slate-400', 'cursor-not-allowed');
+      btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+
+      try {
+        const captureArea = document.getElementById('capture-area');
+        const canvas = await html2canvas(captureArea, {
+          scale: 2, // 提高圖片解析度
+          backgroundColor: "#ffffff",
+          logging: false
+        });
+        
+        const image = canvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.href = image;
+        link.download = `班表_${currentDate.getFullYear()}年${currentDate.getMonth() + 1}月.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (error) {
+        console.error("匯出圖片失敗:", error);
+        alert("匯出圖片失敗，請重試。");
+      } finally {
+        btn.innerHTML = originalText;
+        btn.classList.remove('bg-slate-400', 'cursor-not-allowed');
+        btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+      }
+    };
+
+    // --- 初始化執行 ---
+    // 設定滑桿初始值
+    document.getElementById('font-size-slider').value = currentFontSize;
+    document.getElementById('font-size-display').innerText = currentFontSize + 'px';
+    
     renderButtons();
-  };
-
-  window.changeMonth = function(offset) {
-    currentDate.setMonth(currentDate.getMonth() + offset);
     renderCalendar();
-  };
 
-  window.handleDayClick = function(dateStr) {
-    if (!activeTool) return;
-    if (!schedule[dateStr]) schedule[dateStr] = {};
-    if (activeTool.shift === '清除') {
-      delete schedule[dateStr][activeTool.person];
-    } else {
-      schedule[dateStr][activeTool.person] = activeTool.shift;
-    }
-    localStorage.setItem('scheduleApp_v2', JSON.stringify(schedule));
-    renderCalendar();
-  };
-
-  window.updateFontSize = function(val) {
-    currentFontSize = parseInt(val);
-    document.getElementById('font-size-display').textContent = val + 'px';
-    localStorage.setItem('shiftFontSize', val);
-    renderCalendar();
-  };
-
-  window.exportToPNG = async function() {
-    const btn = document.getElementById('download-btn');
-    btn.textContent = '處理中…';
-    btn.disabled = true;
-    try {
-      const canvas = await html2canvas(document.getElementById('capture-area'), {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        logging: false
-      });
-      const link = document.createElement('a');
-      link.href   = canvas.toDataURL('image/png');
-      link.download = `班表_${currentDate.getFullYear()}年${currentDate.getMonth()+1}月.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch(e) {
-      alert('匯出失敗，請重試。');
-    } finally {
-      btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>下載 PNG`;
-      btn.disabled = false;
-    }
-  };
-
-  // ── Init ──
-  document.getElementById('font-size-slider').value = currentFontSize;
-  document.getElementById('font-size-display').textContent = currentFontSize + 'px';
-  renderButtons();
-  renderCalendar();
-</script>
+  </script>
 </body>
 </html>
+
+
+
+```
+
