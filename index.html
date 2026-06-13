@@ -1,11 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>雙人班表系統</title>
-  <!-- 引入 Tailwind CSS -->
+  <title>雙人班表系統 (進階版)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   
   <style>
@@ -46,13 +44,16 @@
 
   <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
     
-    <!-- 頂部區塊 -->
     <div class="p-4 md:p-6 border-b border-slate-200 bg-slate-100">
       <div class="flex flex-col gap-4">
-        <!-- 說明 -->
-        <div class="flex items-center gap-2 text-sm text-slate-600 mb-2 bg-blue-50 p-3 rounded-lg">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500 shrink-0"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-          <p>使用說明：請先點選下方任一班別按鈕，然後點擊日曆格子。</p>
+        <div class="flex items-center gap-2 text-sm text-slate-600 mb-2 bg-blue-50 p-3 rounded-lg justify-between">
+          <div class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500 shrink-0"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            <p>使用說明：先選班別再點日曆格子。點擊下方班別右側的 ⚙️ 可以開啟管理面板。</p>
+          </div>
+          <button onclick="toggleManager()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-bold text-sm transition-all shadow-sm">
+            ⚙️ 自訂與增刪班別
+          </button>
         </div>
 
         <div>
@@ -73,7 +74,6 @@
 
         <div class="h-px bg-slate-300 w-full my-1"></div>
         
-        <!-- 字體大小調整 -->
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center gap-4">
             <div class="flex items-center gap-2 font-bold text-slate-700">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="m5 10 7-7 7 7"/><path d="m5 14 7 7 7-7"/></svg>
@@ -85,17 +85,66 @@
       </div>
     </div>
 
-    <!-- === 日曆區塊開始 === -->
+    <div id="manager-panel" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl max-h-[85vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4 border-b pb-2">
+          <h2 class="text-xl font-bold flex items-center gap-2">⚙️ 班別管理中心</h2>
+          <button onclick="toggleManager()" class="text-gray-500 hover:text-black font-bold text-xl">&times;</button>
+        </div>
+        
+        <div class="bg-slate-50 p-4 rounded-xl mb-6 border border-slate-200">
+          <h3 class="font-bold mb-2 text-indigo-800">✨ 新增自訂班別</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+            <div>
+              <label class="block text-xs font-bold text-gray-600 mb-1">隸屬人員</label>
+              <select id="new-shift-person" class="w-full p-2 border rounded-lg bg-white font-bold">
+                <option value="xuan">軒 (Xuan)</option>
+                <option value="en">恩 (En)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-600 mb-1">班別名稱</label>
+              <input type="text" id="new-shift-name" placeholder="例如: 假日班" class="w-full p-2 border rounded-lg bg-white font-bold">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-600 mb-1">班別顏色</label>
+              <input type="color" id="new-shift-color" value="#fed7aa" class="w-full h-10 p-1 border rounded-lg bg-white cursor-pointer">
+            </div>
+            <button onclick="addNewShift()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold p-2 rounded-lg transition-all">
+              確認新增
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="font-bold mb-3 text-slate-700">✏️ 現有班別編輯與刪除 (點擊顏色可更換)</h3>
+          <div class="space-y-4">
+            <div>
+              <h4 class="font-bold text-sm bg-slate-200 px-2 py-1 rounded inline-block mb-2">軒 的班別</h4>
+              <div id="manager-xuan-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+            </div>
+            <div class="h-px bg-slate-200 my-2"></div>
+            <div>
+              <h4 class="font-bold text-sm bg-slate-200 px-2 py-1 rounded inline-block mb-2">恩 的班別</h4>
+              <div id="manager-en-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-6 pt-4 border-t flex justify-end">
+          <button onclick="toggleManager()" class="bg-slate-700 hover:bg-slate-800 text-white font-bold px-6 py-2 rounded-lg">完成關閉</button>
+        </div>
+      </div>
+    </div>
+
     <div class="bg-white">
       
-      <!-- 月份與切換 -->
       <div class="flex justify-center items-center p-4 border-b border-slate-200 gap-4">
         <div class="flex items-center gap-4">
           <button onclick="changeMonth(-1)" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           </button>
           
-          <!-- 標題 -->
           <h2 id="month-title" class="text-2xl md:text-3xl font-bold tracking-wider pt-2"></h2>
           
           <button onclick="changeMonth(1)" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
@@ -104,11 +153,8 @@
         </div>
       </div>
 
-      <!-- 日曆表格 -->
       <div class="p-4">
-        <!-- 星期 -->
         <div class="grid grid-cols-7 gap-1 md:gap-2 mb-2">
-          <!-- 改用傳統寫法置中星期標題 -->
           <div class="bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold text-center py-3 text-lg md:text-xl pt-4">一</div>
           <div class="bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold text-center py-3 text-lg md:text-xl pt-4">二</div>
           <div class="bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold text-center py-3 text-lg md:text-xl pt-4">三</div>
@@ -118,42 +164,203 @@
           <div class="bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold text-center py-3 text-lg md:text-xl pt-4">日</div>
         </div>
         
-        <!-- 格子區 -->
         <div id="calendar-grid" class="grid grid-cols-7 gap-1 md:gap-2"></div>
       </div>
     </div>
-    <!-- === 截圖區塊結束 === -->
-
-  </div>
+    </div>
 
   <script>
-    const SHIFT_COLORS = {
-      '早班': 'bg-yellow-200', '白班': 'bg-yellow-200',
-      '長早': 'bg-orange-200', '放假': 'bg-green-200',
-      '中班': 'bg-red-200', '值班': 'bg-red-200',
-      '大夜': 'bg-purple-200', '小夜': 'bg-blue-200',
-      '清除': 'bg-gray-100'
+    // 預設班別色票庫 (如果使用者沒自訂過就用這個)
+    const DEFAULT_COLORS = {
+      '早班': '#fef08a', '白班': '#fef08a',
+      '長早': '#fed7aa', '放假': '#bbf7d0',
+      '中班': '#fecaca', '值班': '#fecaca',
+      '大夜': '#e9d5ff', '小夜': '#bfdbfe',
+      '清除': '#f3f4f6'
     };
-    const XUAN_SHIFTS = ['早班', '長早', '中班', '放假', '大夜', '小夜', '清除'];
-    const EN_SHIFTS = ['白班', '放假', '值班', '清除'];
+    
+    // 預設班別清單
+    const DEFAULT_XUAN_SHIFTS = ['早班', '長早', '中班', '放假', '大夜', '小夜', '清除'];
+    const DEFAULT_EN_SHIFTS = ['白班', '放假', '值班', '清除'];
+
+    // 從本地快取初始化資料
+    let shiftColors = JSON.parse(localStorage.getItem('shiftColorsApp')) || DEFAULT_COLORS;
+    let xuanShifts = JSON.parse(localStorage.getItem('xuanShiftsApp')) || DEFAULT_XUAN_SHIFTS;
+    let enShifts = JSON.parse(localStorage.getItem('enShiftsApp')) || DEFAULT_EN_SHIFTS;
 
     let currentDate = new Date();
     let schedule = JSON.parse(localStorage.getItem('monthlyScheduleApp')) || {};
     let activeTool = null;
     let currentFontSize = localStorage.getItem('shiftFontSize') || '20';
 
+    // 渲染排班按鈕
     function renderButtons() {
       const createBtnHTML = (person, shift) => {
         const isActive = activeTool?.person === person && activeTool?.shift === shift;
-        const activeClass = isActive ? 'border-slate-800 shadow-md scale-105' : 'border-transparent hover:opacity-80 hover:scale-105';
+        const activeClass = isActive ? 'border-slate-800 shadow-md scale-105 ring-2 ring-slate-800' : 'border-transparent hover:opacity-80 hover:scale-105';
         const isClear = shift === '清除';
-        const clearClass = isClear ? 'border-dashed border-gray-300' : '';
-        return `<button onclick="setActiveTool('${person}', '${shift}')" class="px-4 py-2 rounded-lg font-medium transition-all duration-200 border-2 text-black pt-3 ${SHIFT_COLORS[shift]} ${activeClass} ${clearClass}">${isClear ? '🧹 ' : ''}${shift}</button>`;
+        const clearClass = isClear ? 'border-dashed border-gray-400' : '';
+        const bgHex = shiftColors[shift] || '#e2e8f0';
+        
+        return `
+          <button onclick="setActiveTool('${person}', '${shift}')" 
+                  class="px-4 py-2 rounded-lg font-medium transition-all duration-200 border-2 text-black pt-3 ${activeClass} ${clearClass}" 
+                  style="background-color: ${bgHex};">
+            ${isClear ? '🧹 ' : ''}${shift}
+          </button>
+        `;
       };
-      document.getElementById('xuan-buttons').innerHTML = XUAN_SHIFTS.map(s => createBtnHTML('xuan', s)).join('');
-      document.getElementById('en-buttons').innerHTML = EN_SHIFTS.map(s => createBtnHTML('en', s)).join('');
+      
+      document.getElementById('xuan-buttons').innerHTML = xuanShifts.map(s => createBtnHTML('xuan', s)).join('');
+      document.getElementById('en-buttons').innerHTML = enShifts.map(s => createBtnHTML('en', s)).join('');
     }
 
+    // 渲染管理面板的清單
+    function renderManagerLists() {
+      const createManagerItemHTML = (person, shift) => {
+        if (shift === '清除') return ''; // 系統保留鍵不允許編輯
+        const currentHex = shiftColors[shift] || '#e2e8f0';
+        return `
+          <div class="flex items-center justify-between bg-white p-2 border rounded-lg shadow-sm">
+            <div class="flex items-center gap-2 flex-1">
+              <input type="color" value="${currentHex}" 
+                     onchange="updateShiftColor('${shift}', this.value)" 
+                     class="w-8 h-8 rounded border cursor-pointer shrink-0">
+              <input type="text" value="${shift}" 
+                     onchange="renameShift('${person}', '${shift}', this.value)" 
+                     class="font-bold border-b border-transparent hover:border-slate-300 focus:border-indigo-500 focus:bg-slate-50 px-1 py-0.5 w-24 text-sm rounded">
+            </div>
+            <button onclick="deleteShift('${person}', '${shift}')" class="text-red-500 hover:text-red-700 text-sm font-bold px-2 py-1 rounded hover:bg-red-50">
+              ❌ 刪除
+            </button>
+          </div>
+        `;
+      };
+
+      document.getElementById('manager-xuan-list').innerHTML = xuanShifts.map(s => createManagerItemHTML('xuan', s)).join('') || '<p class="text-xs text-gray-400">暫無自訂班別</p>';
+      document.getElementById('manager-en-list').innerHTML = enShifts.map(s => createManagerItemHTML('en', s)).join('') || '<p class="text-xs text-gray-400">暫無自訂班別</p>';
+    }
+
+    // 控制彈窗開關
+    window.toggleManager = function() {
+      const panel = document.getElementById('manager-panel');
+      panel.classList.toggle('hidden');
+      if (!panel.classList.contains('hidden')) {
+        renderManagerLists();
+      }
+    };
+
+    // 新增班別
+    window.addNewShift = function() {
+      const person = document.getElementById('new-shift-person').value;
+      const name = document.getElementById('new-shift-name').value.trim();
+      const color = document.getElementById('new-shift-color').value;
+
+      if (!name) {
+        alert('請輸入班別名稱！');
+        return;
+      }
+      if (name === '清除') {
+        alert('不能使用「清除」作為班別名稱！');
+        return;
+      }
+
+      // 檢查是否重複
+      const targetList = person === 'xuan' ? xuanShifts : enShifts;
+      if (targetList.includes(name)) {
+        alert('該人員已有相同名稱的班別！');
+        return;
+      }
+
+      // 寫入資料
+      shiftColors[name] = color;
+      // 插入在「清除」按鈕之前
+      targetList.splice(targetList.length - 1, 0, name);
+
+      saveAllShiftSettings();
+      renderButtons();
+      renderManagerLists();
+      renderCalendar();
+      
+      // 清空輸入框
+      document.getElementById('new-shift-name').value = '';
+    };
+
+    // 刪除班別
+    window.deleteShift = function(person, shift) {
+      if (!confirm(`確定要刪除「${shift}」班別嗎？（這不會自動清除日曆上已排好的舊紀錄，但之後將無法點選）`)) return;
+      
+      if (person === 'xuan') {
+        xuanShifts = xuanShifts.filter(s => s !== shift);
+      } else {
+        enShifts = enShifts.filter(s => s !== shift);
+      }
+
+      // 如果當前選中的工具被刪除了，重置選取狀態
+      if (activeTool && activeTool.shift === shift && activeTool.person === person) {
+        activeTool = null;
+      }
+
+      saveAllShiftSettings();
+      renderButtons();
+      renderManagerLists();
+      renderCalendar();
+    };
+
+    // 修改班別顏色
+    window.updateShiftColor = function(shift, newHex) {
+      shiftColors[shift] = newHex;
+      saveAllShiftSettings();
+      renderButtons();
+      renderCalendar();
+    };
+
+    // 班別改名
+    window.renameShift = function(person, oldName, newName) {
+      newName = newName.trim();
+      if (!newName || oldName === newName) return;
+      if (newName === '清除') { alert('名稱不可為清除'); return; }
+
+      const targetList = person === 'xuan' ? xuanShifts : enShifts;
+      if (targetList.includes(newName)) {
+        alert('名稱重複了！');
+        renderManagerLists();
+        return;
+      }
+
+      // 1. 更新清單
+      const idx = targetList.indexOf(oldName);
+      if (idx !== -1) targetList[idx] = newName;
+
+      // 2. 轉移顏色設定
+      shiftColors[newName] = shiftColors[oldName];
+      
+      // 3. 同步歷史日曆資料（將舊班名換成新班名）
+      Object.keys(schedule).forEach(dateStr => {
+        if (schedule[dateStr][person] === oldName) {
+          schedule[dateStr][person] = newName;
+        }
+      });
+      localStorage.setItem('monthlyScheduleApp', JSON.stringify(schedule));
+
+      if (activeTool && activeTool.shift === oldName && activeTool.person === person) {
+        activeTool.shift = newName;
+      }
+
+      saveAllShiftSettings();
+      renderButtons();
+      renderManagerLists();
+      renderCalendar();
+    };
+
+    // 儲存設定至 LocalStorage
+    function saveAllShiftSettings() {
+      localStorage.setItem('shiftColorsApp', JSON.stringify(shiftColors));
+      localStorage.setItem('xuanShiftsApp', JSON.stringify(xuanShifts));
+      localStorage.setItem('enShiftsApp', JSON.stringify(enShifts));
+    }
+
+    // 渲染日曆
     function renderCalendar() {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
@@ -171,13 +378,12 @@
 
       const todayStr = new Date().toLocaleDateString('en-CA');
       
-      // 【防跑位終極絕招】：使用 CSS Table 屬性 (.shift-cell, .shift-content)
       const createShiftBlock = (name, shiftName) => {
         if (!shiftName) return '';
-        // 為了相容性，這裡混用 class 跟 inline-style
+        const bgHex = shiftColors[shiftName] || '#e2e8f0';
         return `
           <div class="flex-1 w-full p-0 m-0 relative">
-            <div class="shift-cell ${SHIFT_COLORS[shiftName]}">
+            <div class="shift-cell" style="background-color: ${bgHex};">
               <div class="shift-content" style="font-size: ${currentFontSize}px;">
                 ${name}${shiftName}
               </div>
@@ -237,6 +443,7 @@
         renderCalendar();
     }
 
+    // 初始化調整
     document.getElementById('font-size-slider').value = currentFontSize;
     document.getElementById('font-size-display').innerText = currentFontSize + 'px';
     renderButtons();
@@ -245,7 +452,4 @@
   </script>
 </body>
 </html>
-
-
-```
 
