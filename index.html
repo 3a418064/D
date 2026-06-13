@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>雙人班表系統 (進階版)</title>
+  <title>雙人班表系統 (照片匯出版)</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
   <style>
     @font-face {
@@ -46,14 +47,19 @@
     
     <div class="p-4 md:p-6 border-b border-slate-200 bg-slate-100">
       <div class="flex flex-col gap-4">
-        <div class="flex items-center gap-2 text-sm text-slate-600 mb-2 bg-blue-50 p-3 rounded-lg justify-between">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-sm text-slate-600 mb-2 bg-blue-50 p-3 rounded-lg">
           <div class="flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500 shrink-0"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-            <p>使用說明：先選班別再點日曆格子。點擊下方班別右側的 ⚙️ 可以開啟管理面板。</p>
+            <p>先選班別再點格子。快捷鍵 <kbd class="bg-white border px-1.5 py-0.5 rounded shadow-sm font-mono font-bold text-slate-800">Ctrl + S</kbd> 可快速儲存班表照片！</p>
           </div>
-          <button onclick="toggleManager()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-bold text-sm transition-all shadow-sm">
-            ⚙️ 自訂與增刪班別
-          </button>
+          <div class="flex gap-2 w-full sm:w-auto">
+            <button onclick="exportToImage()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold text-sm transition-all shadow-sm flex items-center gap-1 shrink-0">
+              📸 匯出班表照片
+            </button>
+            <button onclick="toggleManager()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-bold text-sm transition-all shadow-sm shrink-0">
+              ⚙️ 自訂班別
+            </button>
+          </div>
         </div>
 
         <div>
@@ -137,23 +143,23 @@
       </div>
     </div>
 
-    <div class="bg-white">
+    <div id="calendar-capture-area" class="bg-white p-2">
       
-      <div class="flex justify-center items-center p-4 border-b border-slate-200 gap-4">
+      <div class="flex justify-center items-center p-4 border-b border-slate-200 gap-4 bg-white">
         <div class="flex items-center gap-4">
-          <button onclick="changeMonth(-1)" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
+          <button data-html2canvas-ignore="true" onclick="changeMonth(-1)" class="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-600">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           </button>
           
-          <h2 id="month-title" class="text-2xl md:text-3xl font-bold tracking-wider pt-2"></h2>
+          <h2 id="month-title" class="text-2xl md:text-3xl font-bold tracking-wider pt-2 text-black text-center"></h2>
           
-          <button onclick="changeMonth(1)" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
+          <button data-html2canvas-ignore="true" onclick="changeMonth(1)" class="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-600">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
           </button>
         </div>
       </div>
 
-      <div class="p-4">
+      <div class="p-2 md:p-4 bg-white">
         <div class="grid grid-cols-7 gap-1 md:gap-2 mb-2">
           <div class="bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold text-center py-3 text-lg md:text-xl pt-4">一</div>
           <div class="bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold text-center py-3 text-lg md:text-xl pt-4">二</div>
@@ -170,7 +176,7 @@
     </div>
 
   <script>
-    // 預設班別色票庫 (如果使用者沒自訂過就用這個)
+    // 預設班別色票庫
     const DEFAULT_COLORS = {
       '早班': '#fef08a', '白班': '#fef08a',
       '長早': '#fed7aa', '放假': '#bbf7d0',
@@ -179,11 +185,9 @@
       '清除': '#f3f4f6'
     };
     
-    // 預設班別清單
     const DEFAULT_XUAN_SHIFTS = ['早班', '長早', '中班', '放假', '大夜', '小夜', '清除'];
     const DEFAULT_EN_SHIFTS = ['白班', '放假', '值班', '清除'];
 
-    // 從本地快取初始化資料
     let shiftColors = JSON.parse(localStorage.getItem('shiftColorsApp')) || DEFAULT_COLORS;
     let xuanShifts = JSON.parse(localStorage.getItem('xuanShiftsApp')) || DEFAULT_XUAN_SHIFTS;
     let enShifts = JSON.parse(localStorage.getItem('enShiftsApp')) || DEFAULT_EN_SHIFTS;
@@ -193,7 +197,6 @@
     let activeTool = null;
     let currentFontSize = localStorage.getItem('shiftFontSize') || '20';
 
-    // 渲染排班按鈕
     function renderButtons() {
       const createBtnHTML = (person, shift) => {
         const isActive = activeTool?.person === person && activeTool?.shift === shift;
@@ -210,15 +213,13 @@
           </button>
         `;
       };
-      
       document.getElementById('xuan-buttons').innerHTML = xuanShifts.map(s => createBtnHTML('xuan', s)).join('');
       document.getElementById('en-buttons').innerHTML = enShifts.map(s => createBtnHTML('en', s)).join('');
     }
 
-    // 渲染管理面板的清單
     function renderManagerLists() {
       const createManagerItemHTML = (person, shift) => {
-        if (shift === '清除') return ''; // 系統保留鍵不允許編輯
+        if (shift === '清除') return ''; 
         const currentHex = shiftColors[shift] || '#e2e8f0';
         return `
           <div class="flex items-center justify-between bg-white p-2 border rounded-lg shadow-sm">
@@ -236,12 +237,10 @@
           </div>
         `;
       };
-
       document.getElementById('manager-xuan-list').innerHTML = xuanShifts.map(s => createManagerItemHTML('xuan', s)).join('') || '<p class="text-xs text-gray-400">暫無自訂班別</p>';
       document.getElementById('manager-en-list').innerHTML = enShifts.map(s => createManagerItemHTML('en', s)).join('') || '<p class="text-xs text-gray-400">暫無自訂班別</p>';
     }
 
-    // 控制彈窗開關
     window.toggleManager = function() {
       const panel = document.getElementById('manager-panel');
       panel.classList.toggle('hidden');
@@ -250,64 +249,38 @@
       }
     };
 
-    // 新增班別
     window.addNewShift = function() {
       const person = document.getElementById('new-shift-person').value;
       const name = document.getElementById('new-shift-name').value.trim();
       const color = document.getElementById('new-shift-color').value;
 
-      if (!name) {
-        alert('請輸入班別名稱！');
-        return;
-      }
-      if (name === '清除') {
-        alert('不能使用「清除」作為班別名稱！');
-        return;
-      }
+      if (!name) { alert('請輸入班別名稱！'); return; }
+      if (name === '清除') { alert('不能使用「清除」作名稱！'); return; }
 
-      // 檢查是否重複
       const targetList = person === 'xuan' ? xuanShifts : enShifts;
-      if (targetList.includes(name)) {
-        alert('該人員已有相同名稱的班別！');
-        return;
-      }
+      if (targetList.includes(name)) { alert('該人員已有相同名稱的班別！'); return; }
 
-      // 寫入資料
       shiftColors[name] = color;
-      // 插入在「清除」按鈕之前
       targetList.splice(targetList.length - 1, 0, name);
 
       saveAllShiftSettings();
       renderButtons();
       renderManagerLists();
       renderCalendar();
-      
-      // 清空輸入框
       document.getElementById('new-shift-name').value = '';
     };
 
-    // 刪除班別
     window.deleteShift = function(person, shift) {
-      if (!confirm(`確定要刪除「${shift}」班別嗎？（這不會自動清除日曆上已排好的舊紀錄，但之後將無法點選）`)) return;
-      
-      if (person === 'xuan') {
-        xuanShifts = xuanShifts.filter(s => s !== shift);
-      } else {
-        enShifts = enShifts.filter(s => s !== shift);
-      }
-
-      // 如果當前選中的工具被刪除了，重置選取狀態
-      if (activeTool && activeTool.shift === shift && activeTool.person === person) {
-        activeTool = null;
-      }
-
+      if (!confirm(`確定要刪除「${shift}」班別嗎？`)) return;
+      if (person === 'xuan') { xuanShifts = xuanShifts.filter(s => s !== shift); } 
+      else { enShifts = enShifts.filter(s => s !== shift); }
+      if (activeTool && activeTool.shift === shift && activeTool.person === person) { activeTool = null; }
       saveAllShiftSettings();
       renderButtons();
       renderManagerLists();
       renderCalendar();
     };
 
-    // 修改班別顏色
     window.updateShiftColor = function(shift, newHex) {
       shiftColors[shift] = newHex;
       saveAllShiftSettings();
@@ -315,52 +288,36 @@
       renderCalendar();
     };
 
-    // 班別改名
     window.renameShift = function(person, oldName, newName) {
       newName = newName.trim();
       if (!newName || oldName === newName) return;
       if (newName === '清除') { alert('名稱不可為清除'); return; }
 
       const targetList = person === 'xuan' ? xuanShifts : enShifts;
-      if (targetList.includes(newName)) {
-        alert('名稱重複了！');
-        renderManagerLists();
-        return;
-      }
+      if (targetList.includes(newName)) { alert('名稱重複了！'); renderManagerLists(); return; }
 
-      // 1. 更新清單
       const idx = targetList.indexOf(oldName);
       if (idx !== -1) targetList[idx] = newName;
-
-      // 2. 轉移顏色設定
       shiftColors[newName] = shiftColors[oldName];
       
-      // 3. 同步歷史日曆資料（將舊班名換成新班名）
       Object.keys(schedule).forEach(dateStr => {
-        if (schedule[dateStr][person] === oldName) {
-          schedule[dateStr][person] = newName;
-        }
+        if (schedule[dateStr][person] === oldName) { schedule[dateStr][person] = newName; }
       });
       localStorage.setItem('monthlyScheduleApp', JSON.stringify(schedule));
 
-      if (activeTool && activeTool.shift === oldName && activeTool.person === person) {
-        activeTool.shift = newName;
-      }
-
+      if (activeTool && activeTool.shift === oldName && activeTool.person === person) { activeTool.shift = newName; }
       saveAllShiftSettings();
       renderButtons();
       renderManagerLists();
       renderCalendar();
     };
 
-    // 儲存設定至 LocalStorage
     function saveAllShiftSettings() {
       localStorage.setItem('shiftColorsApp', JSON.stringify(shiftColors));
       localStorage.setItem('xuanShiftsApp', JSON.stringify(xuanShifts));
       localStorage.setItem('enShiftsApp', JSON.stringify(enShifts));
     }
 
-    // 渲染日曆
     function renderCalendar() {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
@@ -414,28 +371,46 @@
       document.getElementById('calendar-grid').innerHTML = html;
     }
 
-    window.setActiveTool = function(person, shift) {
-      activeTool = { person, shift };
-      renderButtons();
+    // 📸 照片匯出主程式
+    window.exportToImage = function() {
+      const element = document.getElementById('calendar-capture-area');
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth() + 1;
+      
+      // 使用小延遲確保畫面渲染完全，特別是自訂字體
+      setTimeout(() => {
+        html2canvas(element, {
+          scale: 2,          // 輸出雙倍解析度，確保照片中的字體清晰不模糊
+          useCORS: true,     // 允許跨網域元件（如特殊字體或外鏈圖片）
+          backgroundColor: '#ffffff' // 確保底色是乾淨的白色
+        }).then(canvas => {
+          const image = canvas.toDataURL('image/png');
+          const link = document.createElement('a');
+          link.download = `${year}年${month}月_雙人班表.png`;
+          link.href = image;
+          link.click();
+        });
+      }, 200);
     };
 
-    window.changeMonth = function(offset) {
-      currentDate.setMonth(currentDate.getMonth() + offset);
-      renderCalendar();
-    };
+    // ⌨️ 全域快捷鍵監聽器 (Ctrl + S 或 Cmd + S)
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault(); // 阻止瀏覽器預設的儲存網頁行為
+        exportToImage();
+      }
+    });
 
+    window.setActiveTool = function(person, shift) { activeTool = { person, shift }; renderButtons(); };
+    window.changeMonth = function(offset) { currentDate.setMonth(currentDate.getMonth() + offset); renderCalendar(); };
     window.handleDayClick = function(dateStr) {
       if (!activeTool) return;
       if (!schedule[dateStr]) schedule[dateStr] = {};
-      if (activeTool.shift === '清除') {
-        delete schedule[dateStr][activeTool.person];
-      } else {
-        schedule[dateStr][activeTool.person] = activeTool.shift;
-      }
+      if (activeTool.shift === '清除') { delete schedule[dateStr][activeTool.person]; } 
+      else { schedule[dateStr][activeTool.person] = activeTool.shift; }
       localStorage.setItem('monthlyScheduleApp', JSON.stringify(schedule));
       renderCalendar();
     };
-    
     window.updateFontSize = function(val) {
         currentFontSize = val;
         document.getElementById('font-size-display').innerText = val + 'px';
@@ -443,12 +418,10 @@
         renderCalendar();
     }
 
-    // 初始化調整
     document.getElementById('font-size-slider').value = currentFontSize;
     document.getElementById('font-size-display').innerText = currentFontSize + 'px';
     renderButtons();
     renderCalendar();
-
   </script>
 </body>
 </html>
